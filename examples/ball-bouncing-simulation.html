@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Bouncing Down Stairs Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: white;
+            border: 1px solid #333;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ball Bouncing Down Stairs Simulation</h1>
+    <div class="controls">
+        <button id="resetBtn">Reset Simulation</button>
+        <label>
+            <input type="checkbox" id="showTrail"> Show Trail
+        </label>
+        <label>
+            Gravity:
+            <input type="range" id="gravitySlider" min="0.1" max="1.0" step="0.1" value="0.5">
+            <span id="gravityValue">0.5</span>
+        </label>
+        <label>
+            Bounciness:
+            <input type="range" id="bouncinessSlider" min="0.1" max="0.9" step="0.1" value="0.7">
+            <span id="bouncinessValue">0.7</span>
+        </label>
+    </div>
+    <canvas id="simulationCanvas" width="800" height="600"></canvas>
+
+    <script>
+        /**
+         * BallBouncingDownStairs Simulation
+         * Based on BluePrint code with improved physics and animation
+         */
+        class Ball {
+            constructor(config = {}) {
+                this.x = config.x || 50;
+                this.y = config.y || 50;
+                this.radius = config.radius || 15;
+                this.velocityX = config.velocityX || 2;
+                this.velocityY = config.velocityY || 0;
+                this.color = config.color || "red";
+                this.frictionFactor = config.frictionFactor || 0.99;
+                this.airResistance = config.airResistance || 0.995;
+                
+                // For trail effect
+                this.previousPositions = [];
+                this.maxTrailLength = 20;
+            }
+            
+            update(gravity, dt) {
+                // Store position for trail
+                if (this.previousPositions.length >= this.maxTrailLength) {
+                    this.previousPositions.shift();
+                }
+                this.previousPositions.push({x: this.x, y: this.y});
+                
+                // Apply gravity
+                this.velocityY += gravity * (dt / 16); // Scale by time delta
+                
+                // Apply air resistance
+                this.velocityX *= this.airResistance;
+                
+                // Update position
+                this.x += this.velocityX * (dt / 16);
+                this.y += this.velocityY * (dt / 16);
+            }
+            
+            render(ctx, showTrail) {
+                // Draw trail if enabled
+                if (showTrail && this.previousPositions.length > 0) {
+                    ctx.save();
+                    for (let i = 0; i < this.previousPositions.length; i++) {
+                        const pos = this.previousPositions[i];
+                        const alpha = i / this.previousPositions.length;
+                        ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, this.radius * (0.5 + alpha * 0.5), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+                
+                // Draw ball
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add a slight gradient for 3D effect
+                const gradient = ctx.createRadialGradient(
+                    this.x - this.radius * 0.3, 
+                    this.y - this.radius * 0.3, 
+                    0,
+                    this.x, 
+                    this.y, 
+                    this.radius
+                );
+                gradient.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+                gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            reset(x, y, velocityX, velocityY) {
+                this.x = x;
+                this.y = y;
+                this.velocityX = velocityX;
+                this.velocityY = velocityY;
+                this.previousPositions = [];
+            }
+        }
+        
+        class Stairs {
+            constructor(config = {}) {
+                this.stepCount = config.stepCount || 7;
+                this.stepWidth = config.stepWidth || 100;
+                this.stepHeight = config.stepHeight || 60;
+                this.startX = config.startX || 100;
+                this.startY = config.startY || 200;
+                
+                // Pre-calculate step positions for efficiency
+                this.steps = [];
+                for (let i = 0; i < this.stepCount; i++) {
+                    this.steps.push({
+                        x: this.startX + i * this.stepWidth,
+                        y: this.startY + i * this.stepHeight,
+                        width: this.stepWidth,
+                        height: this.stepHeight
+                    });
+                }
+            }
+            
+            render(ctx) {
+                ctx.save();
+                
+                // Draw each step with a slight 3D effect
+                for (let i = 0; i < this.steps.length; i++) {
+                    const step = this.steps[i];
+                    
+                    // Main step surface
+                    ctx.fillStyle = "#888";
+                    ctx.fillRect(step.x, step.y, step.width, step.height);
+                    
+                    // Top edge highlight
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(step.x, step.y, step.width, 5);
+                    
+                    // Left edge highlight
+                    ctx.fillStyle = "#999";
+                    ctx.fillRect(step.x, step.y, 5, step.height);
+                    
+                    // Bottom and right edge shadow
+                    ctx.fillStyle = "#666";
+                    ctx.fillRect(step.x, step.y + step.height - 5, step.width, 5);
+                    ctx.fillRect(step.x + step.width - 5, step.y, 5, step.height);
+                }
+                
+                ctx.restore();
+            }
+            
+            checkCollision(ball, restitution) {
+                let collided = false;
+                
+                for (const step of this.steps) {
+                    // Calculate the closest point on the rectangle to the circle
+                    const closestX = Math.max(step.x, Math.min(ball.x, step.x + step.width));
+                    const closestY = Math.max(step.y, Math.min(ball.y, step.y + step.height));
+                    
+                    // Calculate the distance between the circle's center and the closest point
+                    const distanceX = ball.x - closestX;
+                    const distanceY = ball.y - closestY;
+                    const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+                    
+                    // Check if the distance is less than the circle's radius squared
+                    if (distanceSquared < ball.radius * ball.radius) {
+                        // Collision detected
+                        collided = true;
+                        
+                        // Calculate the collision normal
+                        const distance = Math.sqrt(distanceSquared);
+                        const normalX = distance ? distanceX / distance : 0;
+                        const normalY = distance ? distanceY / distance : -1;
+                        
+                        // Move ball out of collision
+                        if (distance > 0) {
+                            const penetration = ball.radius - distance;
+                            ball.x += normalX * penetration;
+                            ball.y += normalY * penetration;
+                        }
+                        
+                        // Calculate reflection vector
+                        const dotProduct = ball.velocityX * normalX + ball.velocityY * normalY;
+                        
+                        // Apply more realistic bounce
+                        ball.velocityX = ball.velocityX - 2 * dotProduct * normalX;
+                        ball.velocityY = ball.velocityY - 2 * dotProduct * normalY;
+                        
+                        // Apply restitution (energy loss)
+                        ball.velocityX *= restitution;
+                        ball.velocityY *= restitution;
+                        
+                        // Apply friction to horizontal velocity when hitting top of step
+                        if (Math.abs(normalY) > 0.8) {
+                            ball.velocityX *= 0.95;
+                        }
+                        
+                        // Prevent multiple collisions in one frame
+                        break;
+                    }
+                }
+                
+                return collided;
+            }
+        }
+        
+        class BallBouncingSimulation {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext("2d");
+                this.width = this.canvas.width;
+                this.height = this.canvas.height;
+                
+                // Physics properties
+                this.gravity = 0.5;
+                this.restitution = 0.7;
+                
+                // Create entities
+                this.ball = new Ball({
+                    x: 50,
+                    y: 50,
+                    radius: 15,
+                    velocityX: 2,
+                    color: "red"
+                });
+                
+                this.stairs = new Stairs({
+                    stepCount: 7,
+                    stepWidth: 100,
+                    stepHeight: 60,
+                    startX: 100,
+                    startY: 200
+                });
+                
+                // Animation variables
+                this.lastTimestamp = 0;
+                this.showTrail = false;
+                this.running = true;
+                
+                // Initialize
+                this.setupEventListeners();
+                this.startAnimation();
+            }
+            
+            setupEventListeners() {
+                // Reset button
+                document.getElementById("resetBtn").addEventListener("click", () => {
+                    this.resetSimulation();
+                });
+                
+                // Trail toggle
+                document.getElementById("showTrail").addEventListener("change", (e) => {
+                    this.showTrail = e.target.checked;
+                });
+                
+                // Gravity slider
+                const gravitySlider = document.getElementById("gravitySlider");
+                const gravityValue = document.getElementById("gravityValue");
+                gravitySlider.addEventListener("input", (e) => {
+                    this.gravity = parseFloat(e.target.value);
+                    gravityValue.textContent = this.gravity.toFixed(1);
+                });
+                
+                // Bounciness slider
+                const bouncinessSlider = document.getElementById("bouncinessSlider");
+                const bouncinessValue = document.getElementById("bouncinessValue");
+                bouncinessSlider.addEventListener("input", (e) => {
+                    this.restitution = parseFloat(e.target.value);
+                    bouncinessValue.textContent = this.restitution.toFixed(1);
+                });
+                
+                // Add touch/click to apply force to the ball
+                this.canvas.addEventListener("mousedown", (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickY = e.clientY - rect.top;
+                    
+                    // Calculate direction vector from ball to click
+                    const dirX = clickX - this.ball.x;
+                    const dirY = clickY - this.ball.y;
+                    const length = Math.sqrt(dirX * dirX + dirY * dirY);
+                    
+                    if (length > 0) {
+                        // Apply force proportional to distance, but capped
+                        const force = Math.min(length / 20, 5);
+                        this.ball.velocityX += (dirX / length) * force;
+                        this.ball.velocityY += (dirY / length) * force;
+                    }
+                });
+                
+                // Pause/resume on spacebar
+                document.addEventListener("keydown", (e) => {
+                    if (e.code === "Space") {
+                        this.running = !this.running;
+                        if (this.running) {
+                            this.lastTimestamp = performance.now();
+                            this.startAnimation();
+                        }
+                    }
+                });
+            }
+            
+            update(timestamp) {
+                if (!this.lastTimestamp) {
+                    this.lastTimestamp = timestamp;
+                    return;
+                }
+                
+                // Calculate time delta
+                const deltaTime = timestamp - this.lastTimestamp;
+                this.lastTimestamp = timestamp;
+                
+                // Skip if paused
+                if (!this.running) return;
+                
+                // Update ball physics
+                this.ball.update(this.gravity, deltaTime);
+                
+                // Check for collisions with stairs
+                this.stairs.checkCollision(this.ball, this.restitution);
+                
+                // Check wall collisions
+                if (this.ball.x - this.ball.radius < 0) {
+                    this.ball.x = this.ball.radius;
+                    this.ball.velocityX = Math.abs(this.ball.velocityX) * this.restitution;
+                } else if (this.ball.x + this.ball.radius > this.width) {
+                    this.ball.x = this.width - this.ball.radius;
+                    this.ball.velocityX = -Math.abs(this.ball.velocityX) * this.restitution;
+                }
+                
+                // Check if ball fell off the bottom
+                if (this.ball.y - this.ball.radius > this.height) {
+                    this.resetBall();
+                }
+                
+                // Check if ball is stuck (very low energy)
+                const energy = Math.abs(this.ball.velocityX) + Math.abs(this.ball.velocityY);
+                if (energy < 0.1) {
+                    // Add a small random impulse
+                    if (Math.random() < 0.05) {
+                        this.ball.velocityX += (Math.random() - 0.5) * 0.5;
+                        this.ball.velocityY -= Math.random() * 0.5;
+                    }
+                }
+            }
+            
+            render() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                // Draw stairs
+                this.stairs.render(this.ctx);
+                
+                // Draw ball
+                this.ball.render(this.ctx, this.showTrail);
+                
+                // Draw simulation info
+                this.ctx.fillStyle = "#333";
+                this.ctx.font = "14px Arial";
+                this.ctx.fillText(`Gravity: ${this.gravity.toFixed(1)}`, 10, 20);
+                this.ctx.fillText(`Bounciness: ${this.restitution.toFixed(1)}`, 10, 40);
+                this.ctx.fillText(`Velocity: (${this.ball.velocityX.toFixed(1)}, ${this.ball.velocityY.toFixed(1)})`, 10, 60);
+                
+                if (!this.running) {
+                    this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                    this.ctx.fillRect(0, 0, this.width, this.height);
+                    this.ctx.fillStyle = "white";
+                    this.ctx.font = "30px Arial";
+                    this.ctx.textAlign = "center";
+                    this.ctx.fillText("PAUSED - Press Spacebar to Resume", this.width / 2, this.height / 2);
+                    this.ctx.textAlign = "left";
+                }
+            }
+            
+            resetBall() {
+                // Reset ball to initial position with initial velocity
+                this.ball.reset(50, 50, 2, 0);
+            }
+            
+            resetSimulation() {
+                // Reset ball and ensure simulation is running
+                this.resetBall();
+                this.running = true;
+            }
+            
+            startAnimation() {
+                const animationFrame = (timestamp) => {
+                    this.update(timestamp);
+                    this.render();
+                    
+                    // Continue animation
+                    requestAnimationFrame(animationFrame);
+                };
+                
+                // Start the animation loop
+                requestAnimationFrame(animationFrame);
+            }
+        }
+        
+        // Initialize simulation when page loads
+        window.addEventListener("load", () => {
+            const simulation = new BallBouncingSimulation("simulationCanvas");
+        });
+    </script>
+</body>
+</html>
