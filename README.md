@@ -2,7 +2,7 @@
 
 BluePrint is a pseudocode format designed to facilitate collaboration between human programmers and Large Language Models (LLMs). It allows you to focus on design and logic while the LLM handles translation to specific programming languages and implementation details.
 
-Currently, this is just implemented in a couple of prompt files, but the plan is to expand into an IDE and commandline tools.
+Currently, this is just implemented in a couple of prompt files, but the plan is to expand into an IDE and commandline tools.  Think of BluePrint as a sort of mix of a "psuedocode" Domain Specific Language, a meta-programming language, and a detailed list of rules of engagement.
 
 ## Quick Start
 
