@@ -357,6 +357,54 @@ A: BluePrint is designed as a communication tool, not a development environment.
 **Q: Can I extend the BluePrint syntax?**  
 A: Yes! The syntax is flexible, and you can introduce your own types and structures. Just be consistent and clear.
 
+## Project-Level Design
+
+BluePrint isn't limited to individual components – it can help design and plan entire projects:
+
+```
+design project MyProject
+```
+
+This creates a comprehensive design document including:
+- Project overview and goals
+- Core features and requirements
+- Component architecture
+- Data models
+- Technical specifications
+
+```
+plan development MyProject
+```
+
+This generates a development plan with:
+- Phased implementation approach
+- Task breakdowns
+- Timeline estimates
+- Dependencies and resources
+- Deliverables for each phase
+
+These project-level commands help you organize your thoughts and create a structured approach to development before diving into specific components.
+
+### Example Usage
+
+Start with a high-level project design:
+```
+design project FlappyBirdClone
+```
+
+Break it down into development phases:
+```
+plan development FlappyBirdClone
+```
+
+Then implement specific components:
+```
+Blueprint Bird { ... }
+compile javascript
+```
+
+This workflow allows you to maintain a clear vision of your project while working on individual parts.
+
 ## BluePrint Summary Files (.bps)
 
 For larger projects, BluePrint supports summary files that document API interfaces without including full implementations. These files (with a `.bps` extension) help LLMs understand your code structure without overwhelming their context window.

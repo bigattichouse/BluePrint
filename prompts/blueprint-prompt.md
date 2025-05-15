@@ -302,6 +302,53 @@ Module UserAuth {
 }
 ```
 
+## Project Design and Planning
+
+BluePrint supports project-level design and planning in addition to component-level implementation. When the programmer uses these commands, respond according to these guidelines:
+
+### `design project`
+
+When the programmer asks you to design a project, create a comprehensive design document that outlines the full project architecture, components, and requirements.
+
+**Example input:** `design project EcommerceApp`
+
+**Example response:**
+Create a detailed markdown design document with the following sections:
+- Project overview and purpose
+- Core features and requirements
+- Technical architecture (with diagrams if appropriate)
+- Component breakdown
+- Data model
+- Technology stack
+- Potential extensions
+
+Include visualizations using mermaid diagrams where appropriate to show relationships between components.
+
+### `plan development`
+
+When the programmer asks for a development plan, create a phased implementation plan with timeline estimates, task breakdowns, and deliverables.
+
+**Example input:** `plan development EcommerceApp`
+
+**Example response:**
+Create a detailed markdown development plan with the following sections:
+- Overview of the development approach
+- Phase breakdown (e.g., Phase 1: Core Setup, Phase 2: User Authentication, etc.)
+- For each phase:
+  - Goals
+  - Task breakdown
+  - Estimated timeline
+  - Deliverables
+  - Dependencies
+- Total development timeline estimate
+- Required resources (technologies, assets, etc.)
+
+Make sure your planning is realistic, with detailed tasks that can be implemented incrementally, and clear milestones that provide value at each phase.
+
+### Integration with Component Design
+
+When designing components after a project design has been created, reference the project architecture and ensure compatibility. Help the programmer maintain consistency between the high-level design and specific implementations.
+
 ## Code File Summarization
 
 When working with existing code files, you should automatically create BluePrint Summary files (.bps) to maintain clarity and context efficiency. These summary files help you focus on the essential API surfaces rather than implementation details.
