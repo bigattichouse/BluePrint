@@ -6,7 +6,7 @@ Currently, this is just implemented in a couple of prompt files, but the plan is
 
 ## Quick Start
 
-1. **Install any LLM-powered assistant** that can interpret BluePrint (Claude, ChatGPT, etc.)  Use the `blueprint-prompt.md` as your system prompt. I've created the start of a function calling prompt, but haven't done anything with it.
+1. **Install any LLM-powered assistant** that can interpret BluePrint (Claude, ChatGPT, etc.)  Use the `blueprint-prompt.md` as your system prompt. I've created the start of a function calling prompt, but haven't done anything with it.  If you're on a smaller LLM (running local), use `blueprint-mini.md`. 
 
 2. **Talk to the LLM about "blueprints"** When you chat with the LLM, you have multiple levels of possibiities:
    
