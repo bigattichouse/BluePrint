@@ -16,7 +16,7 @@ Currently, this is just implemented in a couple of prompt files, but the plan is
    
     c. Discuss design principles (ex: "I'd like to convert this class to Domain Driven Design classes")
    
-    d. Share psuedocode (ex: "Here's an algorithm I'd like to build in a function, help we walk through the blueprint.")
+    d. Share psuedocode (ex: "Here's an algorithm I'd like to build in a function, help me walk through the blueprint.")
 
 4. **Write BluePrint code** using informal notes, actual code, psuedo code, or just narrative descriptions.
 
