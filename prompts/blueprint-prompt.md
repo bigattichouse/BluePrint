@@ -88,6 +88,154 @@ CollectionTypes: array[], map<KeyType, ValueType>, set<Type>
 CustomTypes: Any identifier starting with uppercase (e.g., Person, DataProcessor)
 ```
 
+### Database and Persistence
+
+BluePrint provides a high-level, declarative approach to represent database schema, queries, and operations without directly using SQL. This allows you to design the data layer in a more abstract way that aligns with the BluePrint philosophy.
+
+#### Database Schema Definition
+```blueprint
+Database ProjectDB {
+  Schema {
+    Table Users {
+      columns: {
+        id: {type: UUID, primaryKey: true},
+        username: {type: String, length: 50, unique: true, nullable: false},
+        email: {type: String, nullable: false},
+        created_at: {type: Timestamp, default: "CURRENT_TIMESTAMP"}
+      },
+      
+      indexes: [
+        {name: "idx_username", columns: ["username"]},
+        {name: "idx_email", columns: ["email"]}
+      ]
+    },
+    
+    Table Posts {
+      columns: {
+        id: {type: UUID, primaryKey: true},
+        user_id: {type: UUID, references: "Users.id", onDelete: "CASCADE"},
+        title: {type: String, length: 200},
+        content: {type: Text},
+        published: {type: Boolean, default: false}
+      }
+    }
+  }
+}
+```
+
+#### Relationships
+```blueprint
+Database ProjectDB {
+  Relationships {
+    UserHasManyPosts {
+      from: "Users.id",
+      to: "Posts.user_id",
+      type: "oneToMany"
+    },
+    
+    PostBelongsToUser {
+      from: "Posts.user_id",
+      to: "Users.id",
+      type: "manyToOne"
+    }
+  }
+}
+```
+
+#### Data Operations
+```blueprint
+// Create operation
+Operation CreateUser {
+  type: "create",
+  table: "Users",
+  data: {
+    username: "johndoe",
+    email: "john@example.com"
+  }
+}
+
+// Read operation
+Operation GetUserPosts {
+  type: "read",
+  table: "Posts",
+  where: {user_id: "some-uuid", published: true},
+  orderBy: ["created_at DESC"],
+  limit: 10
+}
+
+// Update operation
+Operation UpdateUserEmail {
+  type: "update",
+  table: "Users",
+  where: {id: "user-uuid"},
+  set: {
+    email: "newemail@example.com"
+  }
+}
+
+// Delete operation
+Operation DeleteOldPosts {
+  type: "delete",
+  table: "Posts",
+  where: {
+    published: false,
+    created_at: {before: "2023-01-01"}
+  }
+}
+```
+
+#### Transactions
+```blueprint
+Transaction UserRegistration {
+  operations: [
+    {
+      type: "create",
+      table: "Users",
+      data: {username: "newuser", email: "new@example.com"}
+    },
+    {
+      type: "create",
+      table: "UserProfiles",
+      data: {user_id: "LAST_INSERT_ID", displayName: "New User"}
+    }
+  ],
+  onError: "rollback"
+}
+```
+
+#### Migrations
+```blueprint
+Migration AddUserStatusColumn {
+  up: {
+    addColumn: {
+      table: "Users",
+      column: {
+        name: "status",
+        type: "String",
+        length: 20,
+        default: "active"
+      }
+    }
+  },
+  
+  down: {
+    dropColumn: {
+      table: "Users",
+      column: "status"
+    }
+  }
+}
+```
+
+When working with database operations in BluePrint, focus on:
+- Declarative intent rather than SQL syntax
+- Relationships between entities
+- Data flow and transformations
+- Constraints and business rules
+- Error handling and transaction boundaries
+
+This approach allows you to design database interactions at a higher level before translating them to specific database technologies.
+
 ## Command Set
 
 When the programmer provides a command, respond according to these guidelines:
