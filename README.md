@@ -6,7 +6,7 @@ Currently, this is just implemented in a couple of prompt files, but the plan is
 
 ## Quick Start
 
-1. **Install any LLM-powered assistant** that can interpret BluePrint (Claude, ChatGPT, etc.)
+1. **Install any LLM-powered assistant** that can interpret BluePrint (Claude, ChatGPT, etc.)  Use the `blueprint-prompt.md` as your system prompt. I've created the start of a function calling prompt, but haven't done anything with it.
 
 2. **Talk to the LLM about "blueprints"** When you chat with the LLM, you have multiple levels of possibiities:
     a. Talk to the LLM about "creating the blueprints" for a project or program or module (ex: "Let's build the blueprints for a small web game..")
@@ -14,7 +14,7 @@ Currently, this is just implemented in a couple of prompt files, but the plan is
     c. Discuss design principles (ex: "I'd like to convert this class to Domain Driven Design classes")
     d. Share psuedocode (ex: "Here's an algorithm I'd like to build in a function, help we walk through the blueprint.")
 
-3. **Write BluePrint code** using either concise notes or the JSON-like syntax:
+3. **Write BluePrint code** using informal notes, actual code, psuedo code, or just narrative descriptions.
 
 **Informal notes:**
 ```blueprint
@@ -62,6 +62,7 @@ Algorithm BubbleSort {
 - **Collaborative feedback** from LLM experts
 - **Documentation built-in** via the comment system
 - **Language agnostic** development
+- **No Requirement for strict syntax** The LLM's job is to translate between what you want to do and what needs to be done.
 
 ## Core Syntax
 
