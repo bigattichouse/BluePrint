@@ -496,14 +496,14 @@ Service ProfileManager {
 
 The LLM will use these summary files to understand your code without needing to review the full implementation details.
 
-## Claude or other AI providers
+## BluePrint Project Workflow
 
 1. Create a Blueprint project with the BluePrint prompts
 2. Work through the design with the LLM and generate lots of blueprint files, definitions etc.  This will generate a lot of content.
 3. Once you have all the content, as it to create a single BluePrint for a usable MVP, or the best starting point or initial phase.
 4. Create a new project with the BluePrint prompt and the MVP/Initial phase. 
 5. When initial phase complete, remove the phase prompt and go back to the design project and ask for the next phase prompt
-6. Continue and build.
+6. Continue and build, this will keep your context usage down - but let you adhere to the project.
 
 
 ## Conclusion
