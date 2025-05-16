@@ -8,7 +8,13 @@ Currently, this is just implemented in a couple of prompt files, but the plan is
 
 1. **Install any LLM-powered assistant** that can interpret BluePrint (Claude, ChatGPT, etc.)
 
-2. **Write BluePrint code** using either concise notes or the JSON-like syntax:
+2. **Talk to the LLM about "blueprints"** When you chat with the LLM, you have multiple levels of possibiities:
+    a. Talk to the LLM about "creating the blueprints" for a project or program or module (ex: "Let's build the blueprints for a small web game..")
+    b. Share code or psuedocode with the LLM (ex: "Help me work through the blueprints of this code")
+    c. Discuss design principles (ex: "I'd like to convert this class to Domain Driven Design classes")
+    d. Share psuedocode (ex: "Here's an algorithm I'd like to build in a function, help we walk through the blueprint.")
+
+3. **Write BluePrint code** using either concise notes or the JSON-like syntax:
 
 **Informal notes:**
 ```blueprint
@@ -37,7 +43,7 @@ Algorithm BubbleSort {
 }
 ```
 
-3. **Use commands** to interact with your code:
+4. **Use commands** to interact with your code:
    - `parse` - Get an explanation of your BluePrint (e.g., `parse my_algorithm`)
    - `compile [language]` - Convert to your preferred language with tests (e.g., `compile python`, `compile typescript`)
    - `discuss` - Get implementation feedback (e.g., `discuss: is this approach efficient?`)
