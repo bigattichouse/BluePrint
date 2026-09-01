@@ -369,6 +369,13 @@ Examples:
 
 ### 5.3 — Worksheet Generator
 
+> **See `blueprint-experiment-worksheet.md` for the full worksheet
+> methodology.** This section is a sketch; that prompt covers sheet
+> anatomy, predicted-vs-measured table design, branching "what the outcome
+> means" diagnostics, gating tests, and the generator scaffolding in
+> detail. Use it whenever the worksheets matter more than the sweep.
+
+
 Create `experiments/generate_worksheets.py`:
 
 ```python
