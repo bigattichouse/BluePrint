@@ -8,6 +8,9 @@
     blueprint copy NAME...       copy documents into ./spec of this project (--all for all)
     blueprint install-skills     install the prompts for Claude Code and nanocoder
     blueprint uninstall-skills   remove what install-skills installed
+    blueprint update             get the new BluePrint from Git, show the changes, and reinstall
+    blueprint update --check     show the changes, but do not update
+    blueprint version            show the installed version and commit
 
 Targets for install-skills and uninstall-skills (--target):
     claude     Claude Code skills: ~/.claude/skills/<name>/SKILL.md
@@ -24,13 +27,16 @@ each item. Set BLUEPRINT_HOME to use a different BluePrint directory.
 import argparse
 import json
 import os
+import re
 import shutil
+import subprocess
 import sys
 
 MARKER = ".blueprint-generated"
 UMBRELLA = "blueprint"
 GROUPS = (("prompt", "Prompts"), ("reference", "References"),
           ("tool", "Tools"), ("skilldir", "Skills"), ("external", "External tools"))
+UPSTREAM = "https://github.com/bigattichouse/BluePrint"
 UMBRELLA_SUMMARY = ("List the BluePrint prompts, reference documents, and tools with their "
                     "paths. Use it to find which BluePrint skill or tool fits a task.")
 
@@ -359,7 +365,7 @@ def cmd_list(args, home, items):
                   sys.stdout, indent=2)
         print()
         return 0
-    print(f"BluePrint: {home}\n")
+    print(f"BluePrint {describe_version(home)}: {home}\n")
     width = max(len(i["name"]) for i in items) + 2
     for kind, title in GROUPS:
         group = [i for i in items if i["kind"] == kind]
@@ -485,6 +491,158 @@ def cmd_uninstall_skills(args, home, items):
     return 0
 
 
+# Version and update --------------------------------------------------------
+
+def changelog_version(path):
+    """Return the newest released version in a Keep a Changelog file, or None."""
+    try:
+        text = read(path)
+    except OSError:
+        return None
+    for m in re.finditer(r"^## \[([^\]]+)\]", text, re.M):
+        if m.group(1).lower() != "unreleased":
+            return m.group(1)
+    return None
+
+
+def git(src, *argv, check=True):
+    result = subprocess.run(["git", "-C", src, *argv], capture_output=True, text=True)
+    if check and result.returncode != 0:
+        raise RuntimeError(f"git {' '.join(argv)}: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def install_record(home):
+    """Return the source checkout and commit that 'make install' recorded."""
+    record = {}
+    try:
+        for line in read(os.path.join(home, "SOURCE")).splitlines():
+            key, _, value = line.partition("=")
+            record[key.strip()] = value.strip()
+    except OSError:
+        pass
+    return record
+
+
+def source_checkout(home):
+    """Return (checkout, linked). linked is True when blueprint runs from the checkout."""
+    if os.path.isdir(os.path.join(home, ".git")) or os.path.isfile(os.path.join(home, ".git")):
+        return home, True
+    path = install_record(home).get("path")
+    if path and os.path.exists(os.path.join(path, ".git")):
+        return path, False
+    return None, False
+
+
+def installed_commit(home):
+    src, linked = source_checkout(home)
+    if linked:
+        return git(src, "rev-parse", "HEAD", check=False)
+    return install_record(home).get("commit", "")
+
+
+def describe_version(home):
+    version = changelog_version(os.path.join(home, "CHANGELOG.md")) or "unreleased"
+    commit = installed_commit(home)
+    return f"{version} ({commit[:7]})" if commit else version
+
+
+def cmd_version(args, home, items):
+    print(f"BluePrint {describe_version(home)}")
+    print(f"Installed at: {home}")
+    src, linked = source_checkout(home)
+    if src:
+        print(f"Source: {src}" + (" (linked)" if linked else ""))
+    return 0
+
+
+def run_install(src, home, linked, yes):
+    """Install from the checkout again, so the installed files and skills are current."""
+    if linked:
+        cmd = [os.path.join(src, "bin", "blueprint"), "install-skills"] + (["--yes"] if yes else [])
+    else:
+        prefix = os.path.dirname(os.path.dirname(home))
+        cmd = ["make", "-C", src, "install", f"PREFIX={prefix}"]
+        if yes:
+            cmd.append("SKILL_FLAGS=--yes")
+    print("$ " + " ".join(cmd))
+    return subprocess.run(cmd).returncode
+
+
+def cmd_update(args, home, items):
+    src, linked = source_checkout(home)
+    if not src:
+        print("blueprint: the BluePrint source checkout is not known.")
+        print(f"Clone {UPSTREAM} and run 'make install' in it. Then 'blueprint update' can use it.")
+        return 1
+    try:
+        upstream = git(src, "rev-parse", "--abbrev-ref", "@{u}", check=False) or "origin/main"
+        print(f"Source: {src}")
+        print(f"Fetching {upstream} ...")
+        git(src, "fetch", "--quiet", "--recurse-submodules=no", upstream.split("/", 1)[0])
+        head = git(src, "rev-parse", "HEAD")
+        remote = git(src, "rev-parse", upstream)
+        behind = int(git(src, "rev-list", "--count", f"HEAD..{upstream}"))
+        ahead = int(git(src, "rev-list", "--count", f"{upstream}..HEAD"))
+    except (RuntimeError, ValueError) as e:
+        print(f"blueprint: {e}", file=sys.stderr)
+        return 2
+
+    installed = installed_commit(home)
+    local_version = changelog_version(os.path.join(home, "CHANGELOG.md")) or "unreleased"
+    remote_log = git(src, "show", f"{upstream}:CHANGELOG.md", check=False)
+    remote_version = "unreleased"
+    m = re.search(r"^## \[((?!unreleased)[^\]]+)\]", remote_log, re.M | re.I)
+    if m:
+        remote_version = m.group(1)
+    print(f"Installed: {local_version} ({installed[:7] or 'unknown commit'})")
+    print(f"Available: {remote_version} ({remote[:7]}) on {upstream}")
+
+    if behind:
+        print(f"\n{behind} new commits. Changelog entries:\n")
+        diff = git(src, "diff", f"HEAD..{upstream}", "--", "CHANGELOG.md", check=False)
+        added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
+        if any(l.strip() for l in added):
+            print("\n".join(added))
+        else:
+            print("  (The changelog did not change. The commits are:)")
+            print(git(src, "log", "--oneline", f"HEAD..{upstream}"))
+        print()
+    if ahead:
+        print(f"Note: the source has {ahead} local commits that are not on {upstream}.")
+
+    stale = not linked and installed and installed != head
+    if not behind and not stale:
+        print("BluePrint is up to date.")
+        return 0
+    if args.check:
+        if not behind and stale:
+            print("The installed files are older than the source. Run 'blueprint update' to install again.")
+        return 0
+
+    if behind:
+        dirty = git(src, "status", "--porcelain", "--untracked-files=no")
+        if dirty:
+            print(f"blueprint: {src} has changes that are not committed. Commit or stash them, "
+                  "then run 'blueprint update' again.")
+            return 1
+    if not args.yes:
+        if not sys.stdin.isatty():
+            print("Run 'blueprint update --yes' to update without a terminal.")
+            return 1
+        if not ask("Update and install again?"):
+            return 0
+    if behind:
+        try:
+            print(git(src, "pull", "--ff-only", "--quiet") or "Pulled.")
+            git(src, "submodule", "update", "--init", "--recursive")
+        except RuntimeError as e:
+            print(f"blueprint: {e}", file=sys.stderr)
+            print("The update stopped. The installed files did not change.")
+            return 2
+    return run_install(src, home, linked, args.yes)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="blueprint", description=__doc__.split("\n\n")[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -517,8 +675,14 @@ def main(argv=None):
     scope(p)
     p = sub.add_parser("uninstall-skills", help="remove what install-skills installed")
     scope(p)
+    p = sub.add_parser("update", help="get the new BluePrint from Git and install it again")
+    p.add_argument("--check", action="store_true", help="show the changes, but do not update")
+    p.add_argument("-y", "--yes", action="store_true", help="do not ask")
+    sub.add_parser("version", help="show the installed version and commit")
 
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "--version":
+        argv[0] = "version"
     if not argv or (argv[0].startswith("-") and argv[0] not in ("-h", "--help")):
         argv.insert(0, "list")
     args = ap.parse_args(argv)
@@ -526,7 +690,8 @@ def main(argv=None):
     items = load_catalog(home)
     handler = {"list": cmd_list, "path": cmd_path, "show": cmd_show, "copy": cmd_copy,
                "install-skills": cmd_install_skills,
-               "uninstall-skills": cmd_uninstall_skills}[args.command]
+               "uninstall-skills": cmd_uninstall_skills,
+               "update": cmd_update, "version": cmd_version}[args.command]
     return handler(args, home, items)
 
 

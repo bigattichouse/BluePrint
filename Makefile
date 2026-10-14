@@ -1,7 +1,8 @@
 # BluePrint: install the `blueprint` command, the prompts, and the tools.
 #
 #   make install            install into $(PREFIX) and install the Claude skills
-#   make install SKILLS=0   install, but do not install the Claude skills
+#   make install SKILLS=0   install, but do not install the skills for coding agents
+#   make install SKILL_FLAGS=--yes   install the skills without questions
 #   make link               link $(PREFIX)/bin/blueprint to this directory (for development)
 #   make uninstall          remove the installed files and the Claude skills
 #   make test               run the self-tests and the linters
@@ -12,6 +13,7 @@ PREFIX  ?= $(HOME)/.local
 BINDIR  := $(PREFIX)/bin
 DATADIR := $(PREFIX)/share/blueprint
 SKILLS  ?= 1
+SKILL_FLAGS ?=
 PYTHON  ?= python3
 
 STE_SKILL := tools/asd-ste100-skill
@@ -33,13 +35,14 @@ install: submodules
 	mkdir -p $(DATADIR)/tools
 	cp -R $(STE_SKILL) $(DATADIR)/$(STE_SKILL)
 	rm -rf $(DATADIR)/$(STE_SKILL)/.git
-	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills; fi
+	@printf 'path=%s\ncommit=%s\n' "$(CURDIR)" "$$(git rev-parse HEAD 2>/dev/null)" > $(DATADIR)/SOURCE
+	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills $(SKILL_FLAGS); fi
 	@echo "Installed. Run 'blueprint' to see the prompts and tools."
 
 link: submodules
 	install -d $(BINDIR)
 	ln -sf $(CURDIR)/bin/blueprint $(BINDIR)/blueprint
-	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills; fi
+	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills $(SKILL_FLAGS); fi
 	@echo "Linked. 'blueprint' now uses $(CURDIR)."
 
 uninstall:

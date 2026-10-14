@@ -1,11 +1,11 @@
 # Changelog
 
-All notable changes to this project are recorded in this file.
+This file records all notable changes to this project.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-No version is released yet. All changes are in the Unreleased section.
+There is no released version yet. All changes are in the Unreleased section.
 
 ## [Unreleased]
 
@@ -14,16 +14,21 @@ No version is released yet. All changes are in the Unreleased section.
 - `blueprint` command that lists the installed prompts, references, and tools,
   with their paths and a one-sentence summary. `blueprint path NAME` and
   `blueprint show NAME` give one item.
-- `blueprint install-skills`: installs the prompts as Claude Code skills,
-  as Agent Skills in `~/.agents/skills` (Codex, Gemini CLI, pi, OpenCode),
-  and as nanocoder commands (`/blueprint:NAME`), with a `blueprint` entry
-  that lists all of them. It asks before it installs in each location that
-  it finds. `--target` selects one agent, and `--yes` does not ask.
+- `blueprint install-skills`: installs the prompts for coding agents. It
+  writes Claude Code skills, Agent Skills in `~/.agents/skills` (Codex,
+  Gemini CLI, pi, OpenCode), and nanocoder commands (`/blueprint:NAME`). A
+  `blueprint` entry lists all of them. It asks before it installs in each location that
+  it finds. `--target` selects one agent. `--yes` does not ask.
 - `blueprint copy NAME...` copies prompts into the `spec/` directory of the
   current project. It does not replace a copy that is different from the
   source unless you use `--force`.
 - `blueprint show NAME -o FILE` writes one prompt to a file.
+- `blueprint update`: fetches BluePrint from GitHub and shows the new
+  changelog entries. Then it pulls and installs again. `--check` only shows
+  the changes.
+- `blueprint version`: shows the installed version and commit.
 - `Makefile` with `install`, `link`, `uninstall`, and `test` targets.
+  `make install` records the source checkout in `SOURCE`.
 - `catalog.tsv`: the name, path, skill name, and summary of each item.
 - `blueprint-specification.md`: requirements and tests in Simplified
   Technical English, with a glossary, EARS patterns, `Verify` blocks, and

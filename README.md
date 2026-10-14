@@ -41,6 +41,7 @@ To keep a prompt with a project, use `blueprint copy NAME`. It copies the prompt
 |---|---|
 | `make install PREFIX=/usr/local` | Install in a different directory |
 | `make install SKILLS=0` | Do not install the prompts for coding agents |
+| `make install SKILL_FLAGS=--yes` | Install the prompts for coding agents without questions |
 | `make link` | Link the `blueprint` command to this directory. Use this when you change the prompts. |
 | `make uninstall` | Remove the installed files and the skills |
 | `make test` | Run the self-tests |
@@ -57,7 +58,20 @@ blueprint copy --all --dir docs --index    # copy all prompts, with an index, in
 blueprint install-skills                   # ask about each agent that it finds, then install
 blueprint install-skills --target agents   # install only in ~/.agents/skills
 blueprint install-skills --target nanocoder --project   # into ./.nanocoder/commands
+blueprint version                          # show the installed version and commit
+blueprint update --check                   # show the new changelog entries on GitHub
+blueprint update                           # update from GitHub and install again
 ```
+
+### Update
+
+`make install` records the location of your BluePrint checkout. `blueprint update` uses that checkout:
+
+1. It gets the new commits on the main branch from GitHub.
+2. It shows the new entries in `CHANGELOG.md`. If the changelog did not change, it shows the new commits.
+3. It asks you to continue. Then it pulls the changes (fast-forward only) and installs again.
+
+`blueprint update` does not pull when the checkout has changes that are not committed. Use `--check` to see the changes without an update, and `--yes` to update without questions.
 
 In a Claude Code session, you can say: "Run the `blueprint` command to find the prompts and tools for this task." The LLM then reads only the parts that it needs. After you change a prompt, run `blueprint install-skills` again to update the skills.
 
