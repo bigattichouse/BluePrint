@@ -9,7 +9,7 @@ BluePrint is **design-first development** with an AI engineering partner. The LL
 - Derive test descriptions that verify the design
 - Generate code only when you are ready
 
-BluePrint is a set of prompt files and small tools. You can use the prompts with any capable LLM (Claude, ChatGPT, and others). The `blueprint` command lists the installed prompts and tools, and installs the prompts as Claude Code skills.
+BluePrint is a set of prompt files and small tools. You can use the prompts with any capable LLM (Claude, ChatGPT, and others). The `blueprint` command lists the installed prompts and tools, and installs the prompts for Claude Code, nanocoder, and agents that use the Agent Skills standard.
 
 ## Install
 
@@ -21,12 +21,26 @@ cd BluePrint
 make install
 ```
 
-`make install` installs the `blueprint` command in `~/.local/bin` and the prompts and tools in `~/.local/share/blueprint`. It also installs the prompts as Claude Code skills in `~/.claude/skills`. Make sure that `~/.local/bin` is on your `PATH`.
+`make install` installs the `blueprint` command in `~/.local/bin` and the prompts and tools in `~/.local/share/blueprint`. Make sure that `~/.local/bin` is on your `PATH`.
+
+`make install` also installs the prompts for coding agents. It finds the agents on your computer, and asks before it installs in each location:
+
+| Target | Location | Agents | How to use a prompt |
+|---|---|---|---|
+| `claude` | `~/.claude/skills/<name>/SKILL.md` | Claude Code | Skill `blueprint-model` |
+| `agents` | `~/.agents/skills/<name>/SKILL.md` | Codex, Gemini CLI, pi, OpenCode | Skill `blueprint-model` |
+| `nanocoder` | `~/.config/nanocoder/commands/blueprint/<name>.md` | [nanocoder](https://github.com/Nano-Collective/nanocoder) | Command `/blueprint:model` |
+
+The `claude` and `agents` targets use the [Agent Skills](https://agentskills.io/specification) format: one directory for each skill, with a `SKILL.md` file. OpenCode reads both `~/.claude/skills` and `~/.agents/skills`, so it can show each skill two times. Install only one of the two targets if this is a problem.
+
+Without a terminal, or with `blueprint install-skills --yes`, `blueprint` installs in each location that it finds and does not ask.
+
+To keep a prompt with a project, use `blueprint copy NAME`. It copies the prompt into the `spec/` directory of the current project. For a different agent, use `blueprint show NAME -o FILE` or `blueprint copy --all --dir DIR` to write the prompts as plain Markdown files.
 
 | Command | Result |
 |---|---|
 | `make install PREFIX=/usr/local` | Install in a different directory |
-| `make install SKILLS=0` | Do not install the Claude Code skills |
+| `make install SKILLS=0` | Do not install the prompts for coding agents |
 | `make link` | Link the `blueprint` command to this directory. Use this when you change the prompts. |
 | `make uninstall` | Remove the installed files and the skills |
 | `make test` | Run the self-tests |
@@ -34,10 +48,15 @@ make install
 After you install, run `blueprint`:
 
 ```sh
-blueprint                     # list the prompts and tools, with paths and summaries
-blueprint path ears-lint      # print the path of one item
-blueprint show blueprint-mini # print one prompt
-blueprint install-skills      # install the prompts as Claude Code skills again
+blueprint                                  # list the prompts and tools, with paths and summaries
+blueprint path ears-lint                   # print the path of one item
+blueprint show blueprint-mini              # print one prompt
+blueprint show blueprint-mini -o mini.md   # write one prompt to a file
+blueprint copy blueprint-model            # copy one prompt into ./spec of this project
+blueprint copy --all --dir docs --index    # copy all prompts, with an index, into ./docs
+blueprint install-skills                   # ask about each agent that it finds, then install
+blueprint install-skills --target agents   # install only in ~/.agents/skills
+blueprint install-skills --target nanocoder --project   # into ./.nanocoder/commands
 ```
 
 In a Claude Code session, you can say: "Run the `blueprint` command to find the prompts and tools for this task." The LLM then reads only the parts that it needs. After you change a prompt, run `blueprint install-skills` again to update the skills.

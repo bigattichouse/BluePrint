@@ -15,7 +15,14 @@ No version is released yet. All changes are in the Unreleased section.
   with their paths and a one-sentence summary. `blueprint path NAME` and
   `blueprint show NAME` give one item.
 - `blueprint install-skills`: installs the prompts as Claude Code skills,
-  with a `blueprint` skill that lists all of them.
+  as Agent Skills in `~/.agents/skills` (Codex, Gemini CLI, pi, OpenCode),
+  and as nanocoder commands (`/blueprint:NAME`), with a `blueprint` entry
+  that lists all of them. It asks before it installs in each location that
+  it finds. `--target` selects one agent, and `--yes` does not ask.
+- `blueprint copy NAME...` copies prompts into the `spec/` directory of the
+  current project. It does not replace a copy that is different from the
+  source unless you use `--force`.
+- `blueprint show NAME -o FILE` writes one prompt to a file.
 - `Makefile` with `install`, `link`, `uninstall`, and `test` targets.
 - `catalog.tsv`: the name, path, skill name, and summary of each item.
 - `blueprint-specification.md`: requirements and tests in Simplified

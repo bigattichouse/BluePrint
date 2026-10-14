@@ -1,12 +1,22 @@
 #!/usr/bin/env python3
-"""blueprint: list the BluePrint prompts and tools, and install them as Claude skills.
+"""blueprint: list the BluePrint prompts and tools, and install them for coding agents.
 
-    blueprint                   list the prompts, references, and tools with their paths
-    blueprint list --json       the same list as JSON
-    blueprint path NAME         print the path of one item
-    blueprint show NAME         print one document
-    blueprint install-skills    install the prompts as Claude Code skills
-    blueprint uninstall-skills  remove the skills that install-skills made
+    blueprint                    list the prompts, references, and tools with their paths
+    blueprint list --json        the same list as JSON
+    blueprint path NAME          print the path of one item
+    blueprint show NAME          print one document (-o FILE writes it to a file)
+    blueprint copy NAME...       copy documents into ./spec of this project (--all for all)
+    blueprint install-skills     install the prompts for Claude Code and nanocoder
+    blueprint uninstall-skills   remove what install-skills installed
+
+Targets for install-skills and uninstall-skills (--target):
+    claude     Claude Code skills: ~/.claude/skills/<name>/SKILL.md
+    agents     Agent Skills standard: ~/.agents/skills/<name>/SKILL.md
+               (read by Codex, Gemini CLI, pi, and OpenCode)
+    nanocoder  nanocoder commands: ~/.config/nanocoder/commands/blueprint/<name>.md
+    auto       ask about each target that blueprint finds (the default);
+               with --yes, or without a terminal, install them all
+    all        all targets
 
 The catalog (catalog.tsv) gives the name, path, skill name, and summary of
 each item. Set BLUEPRINT_HOME to use a different BluePrint directory.
@@ -21,6 +31,8 @@ MARKER = ".blueprint-generated"
 UMBRELLA = "blueprint"
 GROUPS = (("prompt", "Prompts"), ("reference", "References"),
           ("tool", "Tools"), ("skilldir", "Skills"), ("external", "External tools"))
+UMBRELLA_SUMMARY = ("List the BluePrint prompts, reference documents, and tools with their "
+                    "paths. Use it to find which BluePrint skill or tool fits a task.")
 
 
 def find_home():
@@ -56,19 +68,6 @@ def load_catalog(home):
     return items
 
 
-def skills_dir(args):
-    if getattr(args, "dir", None):
-        return os.path.abspath(args.dir)
-    if getattr(args, "project", False):
-        return os.path.abspath(os.path.join(".claude", "skills"))
-    config = os.environ.get("CLAUDE_CONFIG_DIR", os.path.expanduser("~/.claude"))
-    return os.path.join(config, "skills")
-
-
-def skill_installed(sdir, skill):
-    return bool(skill) and os.path.isfile(os.path.join(sdir, skill, MARKER))
-
-
 def find_item(items, name):
     for item in items:
         if name in (item["name"], item["skill"]):
@@ -76,76 +75,250 @@ def find_item(items, name):
     sys.exit(f"blueprint: no item named '{name}'. Run 'blueprint' to see the names.")
 
 
-# list ---------------------------------------------------------------------
-
-def cmd_list(args, home, items):
-    sdir = skills_dir(args)
-    for item in items:
-        item["skill_installed"] = skill_installed(sdir, item["skill"])
-    if args.json:
-        json.dump({"tool": "blueprint", "schema": 1, "home": home, "skills_dir": sdir,
-                   "items": items}, sys.stdout, indent=2)
-        print()
-        return 0
-    print(f"BluePrint: {home}\n")
-    width = max(len(i["name"]) for i in items) + 2
-    for kind, title in GROUPS:
-        group = [i for i in items if i["kind"] == kind]
-        if not group:
-            continue
-        print(f"{title}:")
-        for i in group:
-            if kind == "external":
-                where = i["path"] or "not on PATH: ask the user for the path, or ask to clone and build it"
-            elif kind == "tool":
-                where = f"python3 -I {i['path']}"
-            else:
-                where = i["path"]
-            if not os.path.exists(i["path"] or ""):
-                where += "  (missing)" if kind != "external" else ""
-            print(f"  {i['name']:<{width}}{where}")
-            skill = f" (skill: {i['skill']})" if i["skill_installed"] else ""
-            print(f"  {'':<{width}}{i['summary']}{skill}")
-        print()
-    count = sum(i["skill_installed"] for i in items)
-    total = sum(1 for i in items if i["skill"])
-    if count:
-        print(f"Skills: {count} of {total} installed in {sdir}.")
-    else:
-        print("Skills: not installed. Run 'blueprint install-skills' to install them.")
-    print("Run 'blueprint show NAME' to print a document, or 'blueprint path NAME' for one path.")
-    return 0
-
-
-# path / show --------------------------------------------------------------
-
-def cmd_path(args, home, items):
-    item = find_item(items, args.name)
-    if not item["path"]:
-        print(f"blueprint: '{item['name']}' is not on the PATH.", file=sys.stderr)
-        return 1
-    print(item["path"])
-    return 0
-
-
-def cmd_show(args, home, items):
-    item = find_item(items, args.name)
-    path = item["path"] or ""
+def document_path(item):
+    """Return the Markdown file of an item, or None for a tool."""
+    if item["kind"] in ("tool", "external") or not item["path"]:
+        return None
     if item["kind"] == "skilldir":
-        path = os.path.join(path, "SKILL.md")
-    if not os.path.isfile(path) or item["kind"] in ("tool", "external"):
-        print(f"blueprint: '{item['name']}' is not a document. Its path: {item['path']}", file=sys.stderr)
-        return 1
+        return os.path.join(item["path"], "SKILL.md")
+    return item["path"]
+
+
+def read(path):
     with open(path, encoding="utf-8") as f:
-        sys.stdout.write(f.read())
-    return 0
+        return f.read()
 
 
-# skills -------------------------------------------------------------------
+def strip_frontmatter(text):
+    if text.startswith("---\n"):
+        end = text.find("\n---\n", 4)
+        if end != -1:
+            return text[end + 5:].lstrip("\n")
+    return text
 
-def frontmatter(name, description):
+
+def frontmatter(name, description, source=None):
     # json.dumps gives a double-quoted string that is also valid YAML.
-    return f"---\nname: {name}\ndescription: {json.dumps(description)}\n---\n\n"
+    lines = ["---"]
+    if name:
+        lines.append(f"name: {name}")
+    lines.append(f"description: {json.dumps(description)}")
+    if source:
+        # Optional fields of the Agent Skills standard (agentskills.io).
+        lines += ["license: GPL-3.0", "metadata:", f"  source: {json.dumps(source)}"]
+    lines += ["---", "", ""]
+    return "\n".join(lines)
+
+
+# Targets ------------------------------------------------------------------
+
+class Target:
+    """One coding agent that BluePrint can install into."""
+    name = ""
+    label = ""
+
+    def __init__(self, args):
+        self.args = args
+
+    def root(self):
+        raise NotImplementedError
+
+    def detected(self):
+        raise NotImplementedError
+
+    def installed(self, skill):
+        raise NotImplementedError
+
+    def install(self, home, items, force):
+        raise NotImplementedError
+
+    def uninstall(self):
+        raise NotImplementedError
+
+
+class ClaudeTarget(Target):
+    """Claude Code: one directory with a SKILL.md for each skill."""
+    name = "claude"
+    label = "Claude Code"
+
+    def config(self):
+        return os.environ.get("CLAUDE_CONFIG_DIR", os.path.expanduser("~/.claude"))
+
+    def root(self):
+        if self.args.dir:
+            return os.path.abspath(self.args.dir)
+        if self.args.project:
+            return os.path.abspath(os.path.join(".claude", "skills"))
+        return os.path.join(self.config(), "skills")
+
+    def detected(self):
+        return os.path.isdir(self.config()) or bool(shutil.which("claude"))
+
+    def installed(self, skill):
+        return os.path.isfile(os.path.join(self.root(), skill, MARKER))
+
+    def _free(self, target, force):
+        if os.path.exists(target) and not os.path.isfile(os.path.join(target, MARKER)) and not force:
+            print(f"  skip {os.path.basename(target)}: {target} exists and blueprint "
+                  "did not make it (use --force)")
+            return False
+        if os.path.exists(target):
+            shutil.rmtree(target)
+        return True
+
+    def install(self, home, items, force):
+        root = self.root()
+        os.makedirs(root, exist_ok=True)
+        done = 0
+        for name, item, content in skill_contents(home, items):
+            target = os.path.join(root, name)
+            if not self._free(target, force):
+                continue
+            if item and item["kind"] == "skilldir":
+                shutil.copytree(item["path"], target, ignore=shutil.ignore_patterns(".git", ".github"))
+            else:
+                os.makedirs(target)
+                with open(os.path.join(target, "SKILL.md"), "w", encoding="utf-8") as f:
+                    f.write(frontmatter(name, item["summary"] if item else UMBRELLA_SUMMARY,
+                                        item["path"] if item else home) + content)
+            open(os.path.join(target, MARKER), "w").close()
+            done += 1
+        return done
+
+    def uninstall(self):
+        root, removed = self.root(), 0
+        if os.path.isdir(root):
+            for name in sorted(os.listdir(root)):
+                target = os.path.join(root, name)
+                if os.path.isfile(os.path.join(target, MARKER)):
+                    shutil.rmtree(target)
+                    removed += 1
+        return removed
+
+
+class AgentsTarget(ClaudeTarget):
+    """The shared Agent Skills location, ~/.agents/skills.
+
+    Codex, Gemini CLI, pi, and OpenCode read SKILL.md directories from here.
+    """
+    name = "agents"
+    label = "Agent Skills (Codex, Gemini CLI, pi, OpenCode)"
+    AGENT_COMMANDS = ("codex", "gemini", "pi", "opencode")
+    AGENT_DIRS = ("~/.agents", "~/.codex", "~/.gemini", "~/.pi", "~/.config/opencode")
+
+    def config(self):
+        return os.path.expanduser("~/.agents")
+
+    def root(self):
+        if self.args.dir:
+            return os.path.abspath(self.args.dir)
+        if self.args.project:
+            return os.path.abspath(os.path.join(".agents", "skills"))
+        return os.path.join(self.config(), "skills")
+
+    def detected(self):
+        return (any(os.path.isdir(os.path.expanduser(d)) for d in self.AGENT_DIRS) or
+                any(shutil.which(c) for c in self.AGENT_COMMANDS))
+
+
+class NanocoderTarget(Target):
+    """nanocoder: Markdown command files in a 'blueprint' namespace directory.
+
+    nanocoder names a command after its path, so commands/blueprint/model.md
+    becomes the command /blueprint:model.
+    """
+    name = "nanocoder"
+    label = "nanocoder"
+
+    def config(self):
+        env = os.environ.get("NANOCODER_CONFIG_DIR")
+        if env:
+            return env
+        if sys.platform == "darwin":
+            return os.path.expanduser("~/Library/Preferences/nanocoder")
+        if os.name == "nt":
+            return os.path.join(os.environ.get("APPDATA", ""), "nanocoder")
+        base = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+        return os.path.join(base, "nanocoder")
+
+    def commands(self):
+        if self.args.dir:
+            return os.path.abspath(self.args.dir)
+        if self.args.project:
+            return os.path.abspath(os.path.join(".nanocoder", "commands"))
+        return os.path.join(self.config(), "commands")
+
+    def root(self):
+        return os.path.join(self.commands(), UMBRELLA)
+
+    def detected(self):
+        return os.path.isdir(self.config()) or bool(shutil.which("nanocoder"))
+
+    @staticmethod
+    def command_name(skill):
+        if skill == UMBRELLA:
+            return "list"
+        return skill[len("blueprint-"):] if skill.startswith("blueprint-") else skill
+
+    def installed(self, skill):
+        return (os.path.isfile(os.path.join(self.root(), MARKER)) and
+                os.path.isfile(os.path.join(self.root(), self.command_name(skill) + ".md")))
+
+    def install(self, home, items, force):
+        root = self.root()
+        if os.path.exists(root) and not os.path.isfile(os.path.join(root, MARKER)) and not force:
+            print(f"  skip nanocoder: {root} exists and blueprint did not make it (use --force)")
+            return 0
+        if os.path.exists(root):
+            shutil.rmtree(root)
+        os.makedirs(root)
+        done = 0
+        for name, item, content in skill_contents(home, items):
+            if item and item["kind"] == "skilldir":
+                content = (f"The files for this skill are in `{item['path']}`. Read them from "
+                           "there when the text below names a file.\n\n" + content)
+            path = os.path.join(root, self.command_name(name) + ".md")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(frontmatter(None, item["summary"] if item else UMBRELLA_SUMMARY) + content)
+            done += 1
+        open(os.path.join(root, MARKER), "w").close()
+        return done
+
+    def uninstall(self):
+        root = self.root()
+        if os.path.isfile(os.path.join(root, MARKER)):
+            removed = len([n for n in os.listdir(root) if n.endswith(".md")])
+            shutil.rmtree(root)
+            return removed
+        return 0
+
+
+TARGETS = {"claude": ClaudeTarget, "agents": AgentsTarget, "nanocoder": NanocoderTarget}
+
+
+def select_targets(args):
+    choice = getattr(args, "target", "auto") or "auto"
+    if choice in TARGETS:
+        return [TARGETS[choice](args)]
+    targets = [cls(args) for cls in TARGETS.values()]
+    if choice == "all":
+        return targets
+    found = [t for t in targets if t.detected()]
+    return found or [ClaudeTarget(args)]
+
+
+def skill_contents(home, items):
+    """Yield (skill name, catalog item or None, body text) for each skill."""
+    yield UMBRELLA, None, umbrella_body(home, items)
+    for i in items:
+        path = document_path(i)
+        if not i["skill"] or not path or not os.path.isfile(path):
+            continue
+        body = strip_frontmatter(read(path))
+        if i["kind"] != "skilldir":
+            body = (f"<!-- Generated by 'blueprint install-skills' from {path}. "
+                    "Edit the source, then run it again. -->\n\n" + body)
+        yield i["skill"], i, body
 
 
 def umbrella_body(home, items):
@@ -154,7 +327,8 @@ def umbrella_body(home, items):
         "",
         "BluePrint is a set of prompts and tools for collaborative specification,",
         "modeling, and experiments. Run `blueprint` to see the current list with",
-        "installed paths. Run `blueprint show NAME` to read one document.",
+        "installed paths. Run `blueprint show NAME` to read one document. Run",
+        "`blueprint copy NAME` to copy a document into `./spec` of the project.",
         "",
         f"BluePrint directory at install time: `{home}`",
         "",
@@ -173,72 +347,141 @@ def umbrella_body(home, items):
     return "\n".join(lines)
 
 
-def write_skill(sdir, name, content, force):
-    target = os.path.join(sdir, name)
-    if os.path.exists(target) and not os.path.isfile(os.path.join(target, MARKER)) and not force:
-        print(f"  skip {name}: {target} exists and blueprint did not make it (use --force)")
-        return False
-    if os.path.exists(target):
-        shutil.rmtree(target)
-    os.makedirs(target)
-    with open(os.path.join(target, "SKILL.md"), "w", encoding="utf-8") as f:
-        f.write(content)
-    open(os.path.join(target, MARKER), "w").close()
-    return True
+# Commands -----------------------------------------------------------------
+
+def cmd_list(args, home, items):
+    targets = select_targets(args)
+    for item in items:
+        item["installed_for"] = [t.name for t in targets if item["skill"] and t.installed(item["skill"])]
+    if args.json:
+        json.dump({"tool": "blueprint", "schema": 2, "home": home,
+                   "targets": {t.name: t.root() for t in targets}, "items": items},
+                  sys.stdout, indent=2)
+        print()
+        return 0
+    print(f"BluePrint: {home}\n")
+    width = max(len(i["name"]) for i in items) + 2
+    for kind, title in GROUPS:
+        group = [i for i in items if i["kind"] == kind]
+        if not group:
+            continue
+        print(f"{title}:")
+        for i in group:
+            if kind == "external":
+                where = i["path"] or "not on PATH: ask the user for the path, or ask to clone and build it"
+            elif kind == "tool":
+                where = f"python3 -I {i['path']}"
+            else:
+                where = i["path"]
+            if kind != "external" and not os.path.exists(i["path"]):
+                where += "  (missing)"
+            print(f"  {i['name']:<{width}}{where}")
+            skill = f" (skill: {i['skill']})" if i["installed_for"] else ""
+            print(f"  {'':<{width}}{i['summary']}{skill}")
+        print()
+    total = sum(1 for i in items if i["skill"])
+    for t in targets:
+        count = sum(t.name in i["installed_for"] for i in items)
+        state = f"{count} of {total} installed in {t.root()}" if count else "not installed"
+        print(f"Skills for {t.name}: {state}.")
+    print("Run 'blueprint install-skills' to install or update the skills.")
+    print("Run 'blueprint show NAME' to print a document, or 'blueprint path NAME' for one path.")
+    return 0
 
 
-def copy_skill_dir(sdir, name, source, force):
-    target = os.path.join(sdir, name)
-    if os.path.exists(target) and not os.path.isfile(os.path.join(target, MARKER)) and not force:
-        print(f"  skip {name}: {target} exists and blueprint did not make it (use --force)")
+def cmd_path(args, home, items):
+    item = find_item(items, args.name)
+    if not item["path"]:
+        print(f"blueprint: '{item['name']}' is not on the PATH.", file=sys.stderr)
+        return 1
+    print(item["path"])
+    return 0
+
+
+def cmd_show(args, home, items):
+    item = find_item(items, args.name)
+    path = document_path(item)
+    if not path or not os.path.isfile(path):
+        print(f"blueprint: '{item['name']}' is not a document. Its path: {item['path']}", file=sys.stderr)
+        return 1
+    text = read(path)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"Wrote {args.output}")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+def cmd_copy(args, home, items):
+    if args.all:
+        chosen = [i for i in items if document_path(i)]
+    elif args.names:
+        chosen = [find_item(items, n) for n in args.names]
+    else:
+        print("blueprint: name one or more documents, or use --all.", file=sys.stderr)
+        return 2
+    os.makedirs(args.dir, exist_ok=True)
+    status = 0
+    for i in chosen:
+        source = document_path(i)
+        if not source or not os.path.isfile(source):
+            print(f"  skip {i['name']}: it is not a document")
+            status = 1
+            continue
+        target = os.path.join(args.dir, i["name"] + ".md")
+        text = read(source)
+        if os.path.exists(target):
+            if read(target) == text:
+                print(f"  same     {target}")
+                continue
+            if not args.force:
+                print(f"  skip     {target}: it is different from the source (use --force to replace it)")
+                status = 1
+                continue
+            print(f"  replace  {target}")
+        else:
+            print(f"  copy     {target}")
+        with open(target, "w", encoding="utf-8") as f:
+            f.write(text)
+    if args.index:
+        with open(os.path.join(args.dir, "BLUEPRINT-INDEX.md"), "w", encoding="utf-8") as f:
+            f.write(umbrella_body(home, items))
+        print(f"  index    {os.path.join(args.dir, 'BLUEPRINT-INDEX.md')}")
+    return status
+
+
+def ask(question):
+    try:
+        answer = input(f"{question} [Y/n] ").strip().lower()
+    except EOFError:
         return False
-    if os.path.exists(target):
-        shutil.rmtree(target)
-    shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git", ".github"))
-    open(os.path.join(target, MARKER), "w").close()
-    return True
+    return answer in ("", "y", "yes")
 
 
 def cmd_install_skills(args, home, items):
-    sdir = skills_dir(args)
-    os.makedirs(sdir, exist_ok=True)
-    done = 0
-    if write_skill(sdir, UMBRELLA, frontmatter(UMBRELLA,
-                   "List the BluePrint prompts, reference documents, and tools with their paths. "
-                   "Use it to find which BluePrint skill or tool fits a task.")
-                   + umbrella_body(home, items), args.force):
-        done += 1
-    for i in items:
-        if not i["skill"]:
+    targets = select_targets(args)
+    interactive = args.target == "auto" and not args.yes and sys.stdin.isatty()
+    if args.target == "auto":
+        missing = [cls.name for cls in TARGETS.values() if cls.name not in [t.name for t in targets]]
+        if missing:
+            print(f"Not found: {', '.join(missing)}. Use --target NAME to install anyway.")
+    installed = 0
+    for t in targets:
+        if interactive and not ask(f"Install for {t.label} in {t.root()}?"):
             continue
-        if not os.path.exists(i["path"]):
-            print(f"  skip {i['skill']}: {i['path']} is missing")
-            continue
-        if i["kind"] == "skilldir":
-            ok = copy_skill_dir(sdir, i["skill"], i["path"], args.force)
-        else:
-            with open(i["path"], encoding="utf-8") as f:
-                body = f.read()
-            note = (f"<!-- Generated by 'blueprint install-skills' from {i['path']}. "
-                    "Edit the source, then run it again. -->\n\n")
-            ok = write_skill(sdir, i["skill"], frontmatter(i["skill"], i["summary"]) + note + body,
-                             args.force)
-        done += ok
-    print(f"Installed {done} skills in {sdir}.")
-    print("Start a new Claude Code session to load them.")
+        done = t.install(home, items, args.force)
+        installed += 1
+        print(f"{t.name}: installed {done} skills in {t.root()}.")
+    if installed:
+        print("Start a new session to load them.")
     return 0
 
 
 def cmd_uninstall_skills(args, home, items):
-    sdir = skills_dir(args)
-    removed = 0
-    if os.path.isdir(sdir):
-        for name in sorted(os.listdir(sdir)):
-            target = os.path.join(sdir, name)
-            if os.path.isfile(os.path.join(target, MARKER)):
-                shutil.rmtree(target)
-                removed += 1
-    print(f"Removed {removed} skills from {sdir}.")
+    for t in select_targets(args):
+        print(f"{t.name}: removed {t.uninstall()} skills from {t.root()}.")
     return 0
 
 
@@ -249,18 +492,30 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="command")
 
     def scope(p):
-        p.add_argument("--project", action="store_true", help="use ./.claude/skills")
-        p.add_argument("--dir", help="use this skills directory")
+        p.add_argument("--target", choices=("auto", "all", *TARGETS), default="auto",
+                       help="the coding agent to use (default: auto)")
+        p.add_argument("--project", action="store_true",
+                       help="use the project directory (.claude/skills or .nanocoder/commands)")
+        p.add_argument("--dir", help="use this directory")
 
     p = sub.add_parser("list", help="list the prompts and tools (the default)")
     p.add_argument("--json", action="store_true")
     scope(p)
     sub.add_parser("path", help="print the path of one item").add_argument("name")
-    sub.add_parser("show", help="print one document").add_argument("name")
-    p = sub.add_parser("install-skills", help="install the prompts as Claude Code skills")
-    p.add_argument("--force", action="store_true", help="replace skills that blueprint did not make")
+    p = sub.add_parser("show", help="print one document")
+    p.add_argument("name")
+    p.add_argument("-o", "--output", metavar="FILE", help="write the document to FILE")
+    p = sub.add_parser("copy", help="copy documents into this project (./spec by default)")
+    p.add_argument("names", nargs="*", metavar="NAME")
+    p.add_argument("--all", action="store_true", help="copy all documents")
+    p.add_argument("--dir", default="spec", help="the target directory (default: spec)")
+    p.add_argument("--force", action="store_true", help="replace copies that are different")
+    p.add_argument("--index", action="store_true", help="also write BLUEPRINT-INDEX.md")
+    p = sub.add_parser("install-skills", help="install the prompts as skills or commands")
+    p.add_argument("--force", action="store_true", help="replace files that blueprint did not make")
+    p.add_argument("-y", "--yes", action="store_true", help="do not ask; install for each target found")
     scope(p)
-    p = sub.add_parser("uninstall-skills", help="remove the skills that install-skills made")
+    p = sub.add_parser("uninstall-skills", help="remove what install-skills installed")
     scope(p)
 
     argv = list(sys.argv[1:] if argv is None else argv)
@@ -269,7 +524,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     home = find_home()
     items = load_catalog(home)
-    handler = {"list": cmd_list, "path": cmd_path, "show": cmd_show,
+    handler = {"list": cmd_list, "path": cmd_path, "show": cmd_show, "copy": cmd_copy,
                "install-skills": cmd_install_skills,
                "uninstall-skills": cmd_uninstall_skills}[args.command]
     return handler(args, home, items)
