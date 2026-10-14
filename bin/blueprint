@@ -6,8 +6,8 @@
     blueprint path NAME          print the path of one item
     blueprint show NAME          print one document (-o FILE writes it to a file)
     blueprint copy NAME...       copy documents into ./spec of this project (--all for all)
-    blueprint install-skills     install the prompts for Claude Code and nanocoder
-    blueprint uninstall-skills   remove what install-skills installed
+    blueprint install            install the prompts for coding agents (also: install-skills)
+    blueprint uninstall          remove what install installed (also: uninstall-skills)
     blueprint update             get the new BluePrint from Git, show the changes, and reinstall
     blueprint update --check     show the changes, but do not update
     blueprint version            show the installed version and commit
@@ -669,11 +669,13 @@ def main(argv=None):
     p.add_argument("--dir", default="spec", help="the target directory (default: spec)")
     p.add_argument("--force", action="store_true", help="replace copies that are different")
     p.add_argument("--index", action="store_true", help="also write BLUEPRINT-INDEX.md")
-    p = sub.add_parser("install-skills", help="install the prompts as skills or commands")
+    p = sub.add_parser("install-skills", aliases=["install"],
+                       help="install the prompts as skills or commands")
     p.add_argument("--force", action="store_true", help="replace files that blueprint did not make")
     p.add_argument("-y", "--yes", action="store_true", help="do not ask; install for each target found")
     scope(p)
-    p = sub.add_parser("uninstall-skills", help="remove what install-skills installed")
+    p = sub.add_parser("uninstall-skills", aliases=["uninstall"],
+                       help="remove what install-skills installed")
     scope(p)
     p = sub.add_parser("update", help="get the new BluePrint from Git and install it again")
     p.add_argument("--check", action="store_true", help="show the changes, but do not update")
@@ -689,8 +691,8 @@ def main(argv=None):
     home = find_home()
     items = load_catalog(home)
     handler = {"list": cmd_list, "path": cmd_path, "show": cmd_show, "copy": cmd_copy,
-               "install-skills": cmd_install_skills,
-               "uninstall-skills": cmd_uninstall_skills,
+               "install-skills": cmd_install_skills, "install": cmd_install_skills,
+               "uninstall-skills": cmd_uninstall_skills, "uninstall": cmd_uninstall_skills,
                "update": cmd_update, "version": cmd_version}[args.command]
     return handler(args, home, items)
 

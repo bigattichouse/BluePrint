@@ -55,7 +55,7 @@ blueprint show blueprint-mini              # print one prompt
 blueprint show blueprint-mini -o mini.md   # write one prompt to a file
 blueprint copy blueprint-model            # copy one prompt into ./spec of this project
 blueprint copy --all --dir docs --index    # copy all prompts, with an index, into ./docs
-blueprint install-skills                   # ask about each agent that it finds, then install
+blueprint install                          # ask about each agent that it finds, then install
 blueprint install-skills --target agents   # install only in ~/.agents/skills
 blueprint install-skills --target nanocoder --project   # into ./.nanocoder/commands
 blueprint version                          # show the installed version and commit

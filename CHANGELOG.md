@@ -14,7 +14,7 @@ There is no released version yet. All changes are in the Unreleased section.
 - `blueprint` command that lists the installed prompts, references, and tools,
   with their paths and a one-sentence summary. `blueprint path NAME` and
   `blueprint show NAME` give one item.
-- `blueprint install-skills`: installs the prompts for coding agents. It
+- `blueprint install` (also `install-skills`): installs the prompts for coding agents. It
   writes Claude Code skills, Agent Skills in `~/.agents/skills` (Codex,
   Gemini CLI, pi, OpenCode), and nanocoder commands (`/blueprint:NAME`). A
   `blueprint` entry lists all of them. It asks before it installs in each location that
