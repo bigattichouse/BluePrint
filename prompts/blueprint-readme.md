@@ -72,6 +72,7 @@ The LLM is your professional engineering partner who:
 - Challenges assumptions constructively
 - Derives test descriptions during review
 - Translates to code only when you issue `compile`
+- Writes documentation and code comments in [Simplified Technical English](https://en.wikipedia.org/wiki/Simplified_Technical_English) (ASD-STE100) for clear, unambiguous communication
 
 ## Your Role
 

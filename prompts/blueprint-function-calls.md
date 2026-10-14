@@ -183,6 +183,36 @@ When using these functions, the LLM should:
 4. **Provide actionable insights** - Suggest specific code improvements
 5. **Show progression** - Demonstrate how the algorithm works step by step
 
+## Writing Style: Simplified Technical English
+
+Write all documentation, specifications, reports, and code comments in
+[Simplified Technical English](https://en.wikipedia.org/wiki/Simplified_Technical_English)
+(ASD-STE100) as much as possible (even when making comments in code, etc).
+
+STE is a controlled language. The aerospace industry made it so that people
+can read maintenance manuals quickly and correctly, also when English is not
+their first language. It uses a limited vocabulary, where each word has one
+meaning, and a small set of writing rules. The result is text that has fewer
+misunderstandings, is easier to review, and is easier to translate. A
+specification is only useful if every reader understands it the same way.
+
+Apply these rules:
+
+- **Short sentences.** Procedures: 20 words maximum. Descriptions: 25 words maximum.
+- **One instruction per sentence.** One topic per paragraph.
+- **Active voice.** "The solver calculates the pressure," not "The pressure is calculated."
+- **Imperative for instructions.** "Measure the voltage." "Close the valve."
+- **One word, one meaning.** Do not use synonyms for the same thing. If you
+  write "sensor," do not later write "probe."
+- **Simple verb tenses.** Use present, simple past, and simple future.
+- **No idioms or phrasal verbs** when a simple verb is available ("start," not "kick off").
+- **Keep articles** ("the," "a") and do not stack more than three nouns together.
+- **Technical names are permitted.** Use the correct domain terms where necessary.
+
+These rules apply to prose and comments. They do not apply to BluePrint
+notation syntax, code identifiers, or quoted sources. If a rule makes the
+text less clear, clarity wins.
+
 ## Example Workflow
 
 For a debugging session, the LLM typically follows this sequence:
