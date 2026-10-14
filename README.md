@@ -6,10 +6,41 @@ BluePrint is **design-first development** with an AI engineering partner. The LL
 - Make the requirements clear through dialectic questions
 - Write complete specifications in BluePrint notation
 - Find edge cases and gaps in the design
-- Derive test descriptions that validate the design
+- Derive test descriptions that verify the design
 - Generate code only when you are ready
 
-BluePrint is a set of prompt files. You can use them with any capable LLM (Claude, ChatGPT, and others). We plan to add IDE integration and command-line tools in the future.
+BluePrint is a set of prompt files and small tools. You can use the prompts with any capable LLM (Claude, ChatGPT, and others). The `blueprint` command lists the installed prompts and tools, and installs the prompts as Claude Code skills.
+
+## Install
+
+You need Python 3 and Git.
+
+```sh
+git clone --recurse-submodules https://github.com/bigattichouse/BluePrint
+cd BluePrint
+make install
+```
+
+`make install` installs the `blueprint` command in `~/.local/bin` and the prompts and tools in `~/.local/share/blueprint`. It also installs the prompts as Claude Code skills in `~/.claude/skills`. Make sure that `~/.local/bin` is on your `PATH`.
+
+| Command | Result |
+|---|---|
+| `make install PREFIX=/usr/local` | Install in a different directory |
+| `make install SKILLS=0` | Do not install the Claude Code skills |
+| `make link` | Link the `blueprint` command to this directory. Use this when you change the prompts. |
+| `make uninstall` | Remove the installed files and the skills |
+| `make test` | Run the self-tests |
+
+After you install, run `blueprint`:
+
+```sh
+blueprint                     # list the prompts and tools, with paths and summaries
+blueprint path ears-lint      # print the path of one item
+blueprint show blueprint-mini # print one prompt
+blueprint install-skills      # install the prompts as Claude Code skills again
+```
+
+In a Claude Code session, you can say: "Run the `blueprint` command to find the prompts and tools for this task." The LLM then reads only the parts that it needs. After you change a prompt, run `blueprint install-skills` again to update the skills.
 
 ## Prompt Files
 
@@ -19,9 +50,10 @@ All prompts are in the `prompts/` directory.
 |---|---|
 | `blueprint-prompt.md` | Design software with a capable LLM (the main prompt) |
 | `blueprint-mini.md` | Design software with a small or local LLM |
+| `blueprint-specification.md` | Write requirements and tests in STE, with EARS patterns and `Expect` clauses |
 | `maker-blueprint.md` | Design physical objects, experiments, and hardware |
 | `blueprint-model.md` | Make a mathematical model of a physical system |
-| `blueprint-experiments.md` | Explore the design space of a model and validate it with hardware |
+| `blueprint-experiments.md` | Explore the design space of a model and test it with hardware |
 | `blueprint-experiment-worksheet.md` | Make printable bench worksheets that compare measurements to model predictions |
 | `blueprint-observational.md` | Make a model from data that you already have |
 | `blueprint-function-calls.md` | Debug code interactively through function calls |
@@ -36,6 +68,22 @@ The prompts tell the LLM to write documentation, specifications, and code commen
 
 STE is a controlled language from the aerospace industry. It uses short sentences, the active voice, and one meaning for each word. Text in STE has fewer misunderstandings and is easier to review and translate. A specification is only useful if every reader understands it the same way.
 
+### Linters
+
+BluePrint includes two linters. Both use Python 3.
+
+- **`ste-lint`** finds passive voice, long sentences, synonyms, and other structural STE problems. It does not examine meaning. It comes from [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill), which is a Git submodule in `tools/asd-ste100-skill`.
+- **`ears-lint`** examines requirements in the `blueprint-specification` format: EARS patterns, one `shall` in each requirement, `Verify` blocks, and `Expect` clauses. It uses only the Python standard library.
+
+```sh
+python3 -I "$(blueprint path ste-lint)" README.md
+python3 -I "$(blueprint path ears-lint)" requirements.md
+```
+
+### Changelog
+
+The prompts recommend a `CHANGELOG.md` file in the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format for each software project and each design project. BluePrint uses this format in its own [CHANGELOG.md](CHANGELOG.md).
+
 ### Simulation, Not Memory
 
 When a design decision depends on numbers, the LLM makes a small model and sweeps its parameters. It does not answer from memory. A number from memory is a guess. A number from a sweep is evidence.
@@ -44,7 +92,7 @@ For design of experiments, the prompts use the [robust](https://github.com/bigat
 
 - `morris` finds which factors have an effect, and which factors interact.
 - `sobol` measures how much output variance each factor causes.
-- `taguchi` uses orthogonal arrays to find the best settings and robust settings.
+- `taguchi` uses orthogonal arrays to find the best settings, and settings that noise does not change.
 
 If the tools are not on your `PATH`, the LLM asks you for the location of your copy. If you do not have a copy, the LLM asks if it can clone and build one.
 
@@ -72,7 +120,7 @@ If the tools are not on your `PATH`, the LLM asks you for the location of your c
    - It identifies possible problems and gaps.
    - You approve the section or request changes.
 
-5. **Compile to code.** When you are satisfied with the design:
+5. **Compile to code.** When you approve the design:
    - Type `compile [language]` (for example, `compile python`).
    - The LLM generates code and tests.
    - The tests agree with the behaviors in the specification.

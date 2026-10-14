@@ -63,7 +63,7 @@ Apply these rules:
 - **Simple verb tenses.** Use present, simple past, and simple future.
 - **No idioms or phrasal verbs** when a simple verb is available ("start," not "kick off").
 - **Keep articles** ("the," "a") and do not stack more than three nouns together.
-- **Technical names are permitted.** Use the correct domain terms where necessary.
+- **Use technical names.** Use the correct domain terms where necessary.
 
 These rules apply to prose and comments. They do not apply to BluePrint
 notation syntax, code identifiers, or quoted sources. If a rule makes the

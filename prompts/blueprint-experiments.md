@@ -54,7 +54,7 @@ Apply these rules:
 - **Simple verb tenses.** Use present, simple past, and simple future.
 - **No idioms or phrasal verbs** when a simple verb is available ("start," not "kick off").
 - **Keep articles** ("the," "a") and do not stack more than three nouns together.
-- **Technical names are permitted.** Use the correct domain terms where necessary.
+- **Use technical names.** Use the correct domain terms where necessary.
 
 These rules apply to prose and comments. They do not apply to BluePrint
 notation syntax, code identifiers, or quoted sources. If a rule makes the
@@ -107,6 +107,25 @@ use `--json`. The text tables are for people.
 
 The `examples/cookies/` directory in the robust repository shows the full
 workflow on one problem.
+
+---
+
+## Changelog
+
+Keep a `CHANGELOG.md` file in each software project and each design
+project. Use the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+format:
+
+- Put new changes under `## [Unreleased]`.
+- Sort the changes into these groups: `Added`, `Changed`, `Deprecated`,
+  `Removed`, `Fixed`, and `Security`.
+- At a release, move the Unreleased changes under a version and a date
+  (`## [1.2.0] - 2026-10-14`). Use [Semantic Versioning](https://semver.org/).
+- Write for people. Do not copy the commit log.
+- Write each entry in Simplified Technical English.
+
+Record design decisions, specification changes, and model calibrations,
+not only code changes.
 
 ---
 

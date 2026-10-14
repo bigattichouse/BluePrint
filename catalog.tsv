@@ -1,0 +1,22 @@
+# BluePrint catalog. One entry on each line. Fields are separated by TAB characters.
+# kind	name	path-or-command	skill-name	summary
+# kind: prompt, reference, tool (in this repository), skilldir (a skill directory in this repository), external (a command on the PATH).
+# Use "-" for an empty field. Write summaries in Simplified Technical English, one sentence if possible.
+prompt	blueprint-prompt	prompts/blueprint-prompt.md	blueprint-prompt	Main BluePrint prompt: design software with the user one question at a time, write BluePrint specifications, and write code only after `compile`.
+prompt	blueprint-mini	prompts/blueprint-mini.md	blueprint-mini	Short version of the main BluePrint prompt for small or local LLMs.
+prompt	blueprint-specification	prompts/blueprint-specification.md	blueprint-specification	Write requirements and tests in Simplified Technical English with a glossary, EARS patterns, `Verify` blocks, and `Expect` clauses.
+prompt	blueprint-model	prompts/blueprint-model.md	blueprint-model	Make a mathematical model of a physical system with specifications, cited constants, tested models, a solver, and validation.
+prompt	blueprint-experiments	prompts/blueprint-experiments.md	blueprint-experiments	Explore the design space of a model with Morris, Sobol, and Taguchi sweeps, and calibrate the model with hardware experiments.
+prompt	blueprint-experiment-worksheet	prompts/blueprint-experiment-worksheet.md	blueprint-experiment-worksheet	Make printable bench worksheets that show model predictions, blanks for measurements, and what each result means.
+prompt	blueprint-observational	prompts/blueprint-observational.md	blueprint-observational	Make a model from data that already exists, with identifiability checks, backtests, pre-registered forecasts, and drift tracking.
+prompt	maker-blueprint	prompts/maker-blueprint.md	blueprint-maker	Design physical objects, materials, processes, and test plans in Maker BluePrint notation.
+prompt	blueprint-prompt-debug	prompts/blueprint-prompt-debug.md	blueprint-debug	The `debug` command: step through code with given inputs and show variable states, data structures, and edge cases.
+reference	blueprint-function-calls	prompts/blueprint-function-calls.md	blueprint-function-calls	Function-call interface that lets an LLM run, trace, and visualize code from a BluePrint specification during debugging.
+reference	database-patterns	prompts/database-patterns.md	blueprint-database-patterns	Patterns for database schemas, relationships, transactions, migrations, and queries in BluePrint notation.
+reference	security-considerations	prompts/security-considerations.md	blueprint-security	Full security reference for internet-facing applications: application, data, identity, infrastructure, privacy, and incident response.
+reference	security-mini	prompts/security-mini.md	blueprint-security-mini	Short security checklist for internet-facing applications in BluePrint notation.
+reference	blueprint-readme	prompts/blueprint-readme.md	-	Short overview of BluePrint, its commands, and the roles of the user and the LLM.
+tool	ste-lint	tools/asd-ste100-skill/scripts/ste-lint.py	-	Linter for the structural rules of Simplified Technical English (ASD-STE100); run it with `python3 -I`.
+tool	ears-lint	tools/ears-lint/ears-lint.py	-	Linter for EARS requirements and Verify/Expect blocks in the blueprint-specification format; run it with `python3 -I`.
+skilldir	asd-ste100	tools/asd-ste100-skill	asd-ste100	Claude skill that rewrites text in Simplified Technical English (ASD-STE100).
+external	robust	morris	-	Design-of-experiments tools (morris, sobol, taguchi, and more); source: https://github.com/bigattichouse/robust
