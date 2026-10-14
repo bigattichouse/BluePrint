@@ -1,54 +1,91 @@
 # BluePrint
 
-BluePrint is a **collaborative specification framework** where you and an LLM work together to design software through conversation. You describe what you want to build; the LLM asks focused questions, authors structured specifications, and helps you think through design decisions—all before writing a single line of code.
+BluePrint is a **collaborative specification framework**. You and an LLM design software together through conversation. You describe what you want to build. The LLM asks focused questions and writes structured specifications. It also helps you examine design decisions. All of this occurs before anyone writes code.
 
-Think of BluePrint as **design-first development** with an AI engineering partner. The LLM acts as a professional peer who helps you:
-- Clarify requirements through dialectic questioning
-- Author comprehensive specifications in BluePrint notation
-- Identify edge cases and design gaps
+BluePrint is **design-first development** with an AI engineering partner. The LLM is a professional peer. It helps you:
+- Make the requirements clear through dialectic questions
+- Write complete specifications in BluePrint notation
+- Find edge cases and gaps in the design
 - Derive test descriptions that validate the design
-- Generate implementation only when you're ready
+- Generate code only when you are ready
 
-Currently implemented as prompt files for use with any LLM (Claude, ChatGPT, etc.). Future plans include IDE integration and command-line tools.
+BluePrint is a set of prompt files. You can use them with any capable LLM (Claude, ChatGPT, and others). We plan to add IDE integration and command-line tools in the future.
+
+## Prompt Files
+
+All prompts are in the `prompts/` directory.
+
+| Prompt | Use it to |
+|---|---|
+| `blueprint-prompt.md` | Design software with a capable LLM (the main prompt) |
+| `blueprint-mini.md` | Design software with a small or local LLM |
+| `maker-blueprint.md` | Design physical objects, experiments, and hardware |
+| `blueprint-model.md` | Make a mathematical model of a physical system |
+| `blueprint-experiments.md` | Explore the design space of a model and validate it with hardware |
+| `blueprint-experiment-worksheet.md` | Make printable bench worksheets that compare measurements to model predictions |
+| `blueprint-observational.md` | Make a model from data that you already have |
+| `blueprint-function-calls.md` | Debug code interactively through function calls |
+| `security-considerations.md`, `security-mini.md` | Add security requirements to a design |
+| `database-patterns.md` | Specify database schemas, queries, and migrations |
+
+## How BluePrint Writes
+
+### Simplified Technical English
+
+The prompts tell the LLM to write documentation, specifications, and code comments in [Simplified Technical English](https://en.wikipedia.org/wiki/Simplified_Technical_English) (ASD-STE100) as much as possible.
+
+STE is a controlled language from the aerospace industry. It uses short sentences, the active voice, and one meaning for each word. Text in STE has fewer misunderstandings and is easier to review and translate. A specification is only useful if every reader understands it the same way.
+
+### Simulation, Not Memory
+
+When a design decision depends on numbers, the LLM makes a small model and sweeps its parameters. It does not answer from memory. A number from memory is a guess. A number from a sweep is evidence.
+
+For design of experiments, the prompts use the [robust](https://github.com/bigattichouse/robust) command-line tools:
+
+- `morris` finds which factors have an effect, and which factors interact.
+- `sobol` measures how much output variance each factor causes.
+- `taguchi` uses orthogonal arrays to find the best settings and robust settings.
+
+If the tools are not on your `PATH`, the LLM asks you for the location of your copy. If you do not have a copy, the LLM asks if it can clone and build one.
 
 ## Quick Start
 
 1. **Set up your LLM** with the BluePrint prompt:
-   - Use `prompts/blueprint-prompt.md` as your system prompt with Claude, ChatGPT, or similar LLMs
-   - For smaller/local models, use `prompts/blueprint-mini.md` instead
+   - Use `prompts/blueprint-prompt.md` as the system prompt for Claude, ChatGPT, or a similar LLM.
+   - For a small or local model, use `prompts/blueprint-mini.md`.
 
-2. **Start a design conversation** - Simply describe what you want to build:
+2. **Start a design conversation.** Describe what you want to build:
    - "I need to build a user authentication system"
    - "Let's design a caching layer for the API"
-   - "Help me spec out a file upload feature"
+   - "Help me write a specification for a file upload feature"
 
-3. **Engage in dialectic refinement** - The LLM will:
-   - Ask you **one focused question** at a time
-   - Update the specification based on your answer
-   - Show you the changes it made
-   - Ask the next question
-   - Repeat until the design is solid
+3. **Refine the specification through dialectic questions.** The LLM does these steps:
+   - It asks you **one focused question**.
+   - It updates the specification from your answer.
+   - It shows you the change.
+   - It asks the next question.
+   - It repeats these steps until the design is complete.
 
-4. **Review the specification** - The LLM walks through the design section-by-section:
-   - Explains each component
-   - Derives test descriptions that would verify the behavior
-   - Highlights potential issues or gaps
-   - You approve or request changes
+4. **Review the specification.** The LLM shows the design one section at a time:
+   - It explains each component.
+   - It derives test descriptions that verify the behavior.
+   - It identifies possible problems and gaps.
+   - You approve the section or request changes.
 
-5. **Compile to code** - When you're satisfied with the design:
-   - Issue `compile [language]` (e.g., `compile python`)
-   - The LLM generates implementation code with comprehensive tests
-   - Tests match the behaviors defined in the specification
+5. **Compile to code.** When you are satisfied with the design:
+   - Type `compile [language]` (for example, `compile python`).
+   - The LLM generates code and tests.
+   - The tests agree with the behaviors in the specification.
 
-## Example Conversation Flow
+## Example Conversation
 
 **You:** "I need a user authentication system"
 
-**LLM:** "What should happen after a user successfully authenticates—should they get a session token, JWT, or something else?"
+**LLM:** "What occurs after a user authenticates? Does the user get a session token, a JWT, or something different?"
 
 **You:** "JWT tokens"
 
-**LLM:** "Got it. I've updated the specification:
+**LLM:** "I updated the specification:
 
 ```blueprint
 Service AuthenticationService {
@@ -60,11 +97,11 @@ Service AuthenticationService {
 }
 ```
 
-Next question: How should failed login attempts be handled—should there be rate limiting or account lockout?"
+Next question: What occurs when a login fails? Do you want rate limiting or an account lockout?"
 
 **You:** "Lock the account after 3 failed attempts for 15 minutes"
 
-**LLM:** "Updated:
+**LLM:** "I updated the specification:
 
 ```blueprint
 Service AuthenticationService {
@@ -87,41 +124,41 @@ Service AuthenticationService {
 }
 ```
 
-Should the system notify the user when their account is locked, or just return an error?"
+When the system locks an account, must it send a notification to the user? Or must it only return an error?"
 
-...and so on until the specification is complete.
+The conversation continues until the specification is complete.
 
-## Commands You Can Use
+## Commands
 
-During the specification process and review, you can use these commands:
+You can use these commands during specification and review:
 
-- **`parse`** - Ask the LLM to explain the current specification structure
-- **`discuss`** - Open dialogue about tradeoffs and design decisions (e.g., "discuss: is this approach efficient?")
-- **`improve`** - Request optimization suggestions for the design
-- **`analyze`** - Get analysis of edge cases, complexity, or potential issues
-- **`comment`** - Ask for detailed annotations throughout the specification
-- **`scenario` / `test`** - Describe a behavior and get a test description (e.g., "scenario: function returns null for empty input")
-- **`create summary`** - Generate API summary files for existing code (e.g., "create summary for database.py")
-- **`design project [name]`** - Create a comprehensive architecture document
-- **`plan development [name]`** - Generate an implementation roadmap
-- **`compile [language]`** - **Generate actual code** with tests (e.g., "compile python", "compile typescript")
+- **`parse`**: The LLM explains the structure of the current specification.
+- **`discuss`**: Discuss tradeoffs and design decisions (for example, "discuss: is this approach efficient?").
+- **`improve`**: The LLM suggests improvements to the design.
+- **`analyze`**: The LLM analyzes edge cases, complexity, and possible problems.
+- **`comment`**: The LLM adds detailed comments to the specification.
+- **`scenario` / `test`**: Describe a behavior. The LLM writes a test description (for example, "scenario: function returns null for empty input").
+- **`create summary`**: The LLM makes API summary files for existing code (for example, "create summary for database.py").
+- **`design project [name]`**: The LLM makes an architecture document.
+- **`plan development [name]`**: The LLM makes an implementation plan.
+- **`compile [language]`**: The LLM **generates code** and tests (for example, "compile python" or "compile typescript").
 
-**Important:** The LLM stays in specification mode until you issue `compile`. This ensures design review happens before implementation.
+**Important:** The LLM stays in specification mode until you type `compile`. Thus you review the design before anyone writes code.
 
-## Why BluePrint?
+## Why Use BluePrint?
 
-- **Design before code** - Think through requirements, edge cases, and behaviors before implementation
-- **Collaborative refinement** - An AI partner helps you identify gaps and improve designs
-- **Test-driven from the start** - Tests are derived from specifications, ensuring coverage
-- **Clear documentation** - The specification IS the documentation
-- **Language agnostic** - Specify once, compile to any language
-- **Reduced rework** - Catch design issues before they become code bugs
-- **Professional dialogue** - The LLM challenges assumptions and suggests better patterns
-- **Incremental progress** - Build specifications step-by-step through focused questions
+- **Design before code.** You examine requirements, edge cases, and behaviors before implementation.
+- **Collaborative refinement.** An AI partner helps you find gaps and improve the design.
+- **Tests from the start.** The tests come from the specification, so they cover the design.
+- **Clear documentation.** The specification is the documentation.
+- **Any language.** You write one specification and compile it to any language.
+- **Less rework.** You find design problems before they become bugs in the code.
+- **Professional dialogue.** The LLM questions assumptions and suggests better patterns.
+- **Incremental progress.** You make the specification one step at a time, with one question at a time.
 
 ## BluePrint Notation Reference
 
-The LLM authors specifications using BluePrint notation—a flexible, JSON-like syntax. You don't need to write this yourself; the LLM generates it during your conversation. However, understanding the notation helps you review specifications effectively.
+The LLM writes specifications in BluePrint notation. BluePrint notation is a flexible syntax that is similar to JSON. You do not have to write it. The LLM writes it during the conversation. But if you understand the notation, you can review specifications better.
 
 ### Basic Structure
 
@@ -139,7 +176,7 @@ TypeName Identifier {
 
 ### File References
 
-BluePrint supports references to components defined in other files:
+A specification can refer to components in other files:
 
 ```blueprint
 // Reference to external component
@@ -159,11 +196,11 @@ Service AuthService {
 }
 ```
 
-This approach allows you to break larger systems into modular files while maintaining clear relationships between components.
+With file references, you can divide a large system into small files. The relations between the components stay clear.
 
 ### Behavior Specifications
 
-BluePrint supports flexible behavior specifications, from formal Given/When/Then syntax to more natural language descriptions:
+You can write behaviors in the formal Given/When/Then syntax or in natural language. You can also use both together:
 
 ```blueprint
 // Formal Given/When/Then syntax
@@ -200,7 +237,7 @@ Cache LRUCache {
 }
 ```
 
-These behavior specifications help document expectations and automatically generate appropriate tests when compiled.
+Behaviors record what you expect. When you compile, the LLM generates tests from them.
 
 ### Flow Control
 
@@ -230,16 +267,16 @@ CollectionTypes: array[], map<KeyType, ValueType>, set<Type>
 CustomTypes: Any identifier starting with uppercase (e.g., Person, DataProcessor)
 ```
 
-## The Dialectic Review Process
+## The Dialectic Review
 
-After the LLM has built a specification through iterative questioning, it will walk you through a **dialectic review**. This is where the real value emerges:
+After the questions, the LLM does a **dialectic review** of the specification with you. This step is the most important part of the process.
 
-### What Happens During Review
+### Review Steps
 
-1. **Section-by-section walkthrough** - The LLM presents each part of the specification clearly
-2. **Derived test descriptions** - For each behavior, the LLM shows what tests would verify it
-3. **Gap identification** - Missing tests reveal missing specifications
-4. **Shared understanding** - You and the LLM align on what "done" means
+1. **One section at a time.** The LLM shows each part of the specification.
+2. **Derived test descriptions.** For each behavior, the LLM shows the tests that verify it.
+3. **Gaps.** A missing test shows a missing part of the specification.
+4. **Shared understanding.** You and the LLM agree on what "done" means.
 
 ### Example Review
 
@@ -262,15 +299,15 @@ This implies these tests:
 Does this match your intent? Do the tests capture what you expect?"
 ```
 
-You can then:
-- Approve the section and move to the next
-- Request changes (the LLM updates and re-reviews)
-- Ask questions about tradeoffs or edge cases
-- Use `improve` or `analyze` commands for deeper examination
+Then you can do one of these:
+- Approve the section and go to the next section.
+- Request changes. The LLM updates the section and reviews it again.
+- Ask about tradeoffs or edge cases.
+- Use the `improve` or `analyze` command for a deeper examination.
 
 ## Example Specifications
 
-These examples show the kind of structured specifications the LLM produces during your collaboration. You provide the intent; the LLM authors these documents.
+These examples show the type of specification that the LLM writes. You give the intent. The LLM writes the specification.
 
 ### Data Structure
 
@@ -343,61 +380,61 @@ API UserService {
 }
 ```
 
-## Best Practices for Collaborative Design
+## Best Practices
 
 ### During Specification
 
-1. **Answer questions thoughtfully** - The LLM asks one question at a time for a reason; focused answers lead to better specs
-2. **Challenge back** - If you're unsure about a design decision, ask the LLM to explain tradeoffs
-3. **Think about edge cases** - When the LLM asks about error handling, consider all the ways things could fail
-4. **Be specific about requirements** - "Fast" is vague; "sub-100ms response time" is actionable
-5. **Use `discuss` liberally** - Open dialogue when you're uncertain about an approach
+1. **Give careful answers.** The LLM asks one question at a time. Focused answers make better specifications.
+2. **Ask questions too.** If you are not sure about a decision, ask the LLM to explain the tradeoffs.
+3. **Think about edge cases.** When the LLM asks about errors, think about all the ways that the system can fail.
+4. **Give specific requirements.** "Fast" is not specific. "Response time less than 100 ms" is specific.
+5. **Use `discuss` frequently.** Use it when you are not sure about an approach.
 
 ### During Review
 
-1. **Read derived tests carefully** - They reveal what the spec actually says, not what you think it says
-2. **Ask "what could go wrong?"** - The LLM will identify gaps, but you should actively look for them too
-3. **Don't rubber-stamp** - The review is where design flaws surface; take your time
-4. **Request `analyze` or `improve`** - Get deeper examination of security, performance, or alternative approaches
+1. **Read the derived tests carefully.** They show what the specification actually says. This can be different from what you think it says.
+2. **Ask "what can go wrong?"** The LLM finds gaps, but you must also look for them.
+3. **Do not approve without reading.** Design problems become visible during the review. Use as much time as necessary.
+4. **Use `analyze` or `improve`.** These commands examine security, performance, and alternative approaches.
 
 ### After Compilation
 
-1. **Review generated code** - The LLM follows the spec, but verify the implementation matches your understanding
-2. **Run the tests** - They should pass; if not, the spec may have been ambiguous
-3. **Iterate if needed** - Go back to specification mode if the implementation reveals design issues
+1. **Review the generated code.** Make sure that the code agrees with your understanding of the specification.
+2. **Run the tests.** The tests must pass. If they fail, the specification can be ambiguous.
+3. **Iterate if necessary.** If the code shows a design problem, go back to specification mode.
 
 ## Limitations
 
-BluePrint works best for algorithms, data structures, and logical processes. It may be less suited for:
+BluePrint is best for algorithms, data structures, and logical processes. It is less applicable to:
 
-- Hardware-specific optimizations
-- Complex UI definitions
+- Optimizations for specific hardware
+- Complex user interfaces
 - Real-time systems with strict timing requirements
-- Ultra-performance-critical code where every CPU cycle matters
+- Code where each CPU cycle is important
 
 ## FAQ
 
-**Q: Do I need to learn BluePrint syntax to use this?**
-A: No! You just describe what you want in natural language. The LLM writes the BluePrint specifications. Understanding the notation helps you review specs, but you don't write it yourself.
+**Q: Must I learn BluePrint syntax?**
+A: No. You describe what you want in natural language. The LLM writes the BluePrint specification. If you understand the notation, you can review specifications better, but you do not write them.
 
-**Q: Can BluePrint handle large projects?**
-A: Yes. Use `design project` and `plan development` commands to architect the system, then work phase-by-phase on individual components. The LLM ensures consistency across components.
+**Q: Can BluePrint help with large projects?**
+A: Yes. Use the `design project` and `plan development` commands to make the architecture. Then work on one component at a time. The LLM keeps the components consistent.
 
-**Q: What if the LLM's specification doesn't match what I wanted?**
-A: That's what the dialectic review is for! The LLM walks through the spec section-by-section. You can request changes, ask for `improve` suggestions, or use `discuss` to explore alternatives.
+**Q: What if the specification is not what I wanted?**
+A: The dialectic review is for this problem. The LLM shows the specification one section at a time. You can request changes, use `improve` to get suggestions, or use `discuss` to examine alternatives.
 
-**Q: How does versioning work?**
-A: Store your BluePrint specifications in version control (Git). They're human-readable design documents that complement your code.
+**Q: How do I keep versions of a specification?**
+A: Keep your BluePrint specifications in version control (for example, Git). They are design documents that people can read, and they go with your code.
 
-**Q: Can I write BluePrint specifications manually?**
-A: Yes! If you prefer, you can write specs yourself and ask the LLM to `compile` them. But the real power is in the collaborative authoring process.
+**Q: Can I write BluePrint specifications myself?**
+A: Yes. You can write a specification and tell the LLM to `compile` it. But the collaborative process gives the most benefit.
 
-**Q: What LLMs work best with BluePrint?**
-A: Any capable LLM (Claude, ChatGPT, etc.) works with the `blueprint-prompt.md` system prompt. For smaller/local models, try `blueprint-mini.md`.
+**Q: Which LLMs work best with BluePrint?**
+A: Any capable LLM (Claude, ChatGPT, and others) works with the `blueprint-prompt.md` system prompt. For a small or local model, use `blueprint-mini.md`.
 
 ## Project-Level Design
 
-BluePrint scales from individual components to entire systems. For larger projects, use these commands to create comprehensive architecture documents:
+You can use BluePrint for one component or for a full system. For a large project, use these commands to make architecture documents.
 
 ### Design a Project
 
@@ -405,14 +442,14 @@ BluePrint scales from individual components to entire systems. For larger projec
 design project MyProject
 ```
 
-The LLM will ask questions about your project goals, constraints, and requirements, then produce an architecture document covering:
+The LLM asks about the goals, constraints, and requirements of your project. Then it makes an architecture document with these items:
 - Project overview and objectives
 - Bounded contexts and responsibilities
-- Component inventory with dependencies
-- Data models and ownership
+- List of components and their dependencies
+- Data models and data ownership
 - Integration points (internal and external)
 - Security boundaries and trust zones
-- Key technical decisions with rationale
+- Important technical decisions and the reasons for them
 
 ### Plan Development
 
@@ -420,35 +457,35 @@ The LLM will ask questions about your project goals, constraints, and requiremen
 plan development MyProject
 ```
 
-The LLM generates an implementation roadmap with:
-- Phased approach with clear milestones
-- Task breakdown for each phase
+The LLM makes an implementation plan with these items:
+- Phases with clear milestones
+- Tasks for each phase
 - Dependencies between tasks
-- Risk factors and mitigations
-- Deliverables per phase
+- Risks and mitigations
+- Deliverables for each phase
 
 ### Workflow for Large Projects
 
-1. **Start with project design** - Get the architecture documented first
-2. **Generate development plan** - Break it into phases
-3. **Work phase by phase** - Spec and implement one component at a time
-4. **Maintain consistency** - The LLM helps ensure new components align with the overall architecture
+1. **Design the project first.** Write the architecture document.
+2. **Make a development plan.** Divide the work into phases.
+3. **Work one phase at a time.** Specify and implement one component at a time.
+4. **Keep the components consistent.** The LLM helps make sure that each new component agrees with the architecture.
 
-This approach keeps you focused on one piece at a time while maintaining the big picture.
+With this workflow, you work on one part at a time, but you do not lose the full view of the system.
 
 ## BluePrint Summary Files (.bps)
 
-For larger projects, BluePrint supports summary files that document API interfaces without including full implementations. These files (with a `.bps` extension) help LLMs understand your code structure without overwhelming their context window.
+A summary file (`.bps`) records the API of your code without the implementation. With summary files, an LLM can understand the structure of a large project without reading all of the code. This uses less of the LLM's context window.
 
-### Creating Summary Files
+### Make Summary Files
 
-The LLM can automatically create summary files for your existing code:
+The LLM can make summary files for your existing code:
 
 ```
 create summary for user_service.py
 ```
 
-This will generate a `.bps` file like:
+The result is a `.bps` file similar to this one:
 
 ```blueprint
 // file: user_service.bps
@@ -487,14 +524,14 @@ Module UserService {
 
 ### Benefits
 
-- **Context Efficiency**: LLMs understand your code without seeing implementations
-- **Clearer Communication**: Focus on API surfaces rather than implementation details
-- **Cross-Language Support**: Works for any programming language
-- **Documentation Generation**: Summary files can generate actual API docs
+- **Less context.** The LLM understands your code without the implementations.
+- **Clear communication.** The summary shows the API, not the implementation details.
+- **Any language.** Summary files work for all programming languages.
+- **Documentation.** You can generate API documentation from summary files.
 
-### Using Summary Files
+### Use Summary Files
 
-Reference summary files in your BluePrint code:
+A specification can import summary files:
 
 ```blueprint
 Service ProfileManager {
@@ -512,35 +549,34 @@ Service ProfileManager {
 }
 ```
 
-The LLM will use these summary files to understand your code without needing to review the full implementation details.
+The LLM uses the summary files to understand your code. It does not have to read the full implementation.
 
-## Recommended Workflow for New Projects
+## Workflows for New Projects
 
 ### Option 1: Bottom-Up (Start Small)
 
-1. **Identify a core component** - Pick the most fundamental piece
-2. **Spec it collaboratively** - Describe what you need; the LLM asks questions
-3. **Review thoroughly** - Walk through the specification and derived tests
-4. **Compile and test** - Generate code, verify it works
-5. **Expand incrementally** - Build the next component, referencing the first
+1. **Select a core component.** Start with the most fundamental part.
+2. **Specify it together.** Describe what you need. The LLM asks questions.
+3. **Review it carefully.** Examine the specification and the derived tests.
+4. **Compile and test.** Generate the code and make sure that it works.
+5. **Add more components.** Make the next component. It can refer to the first component.
 
 ### Option 2: Top-Down (Plan First)
 
-1. **Design the project** - Use `design project [name]` to create architecture
-2. **Plan development** - Use `plan development [name]` to break into phases
-3. **Implement phase by phase** - Spec and compile each component systematically
-4. **Maintain consistency** - Reference the project design as you build
+1. **Design the project.** Use `design project [name]` to make the architecture.
+2. **Plan the development.** Use `plan development [name]` to divide the work into phases.
+3. **Work one phase at a time.** Specify and compile each component in sequence.
+4. **Keep the components consistent.** Refer to the project design during the work.
 
 ### Option 3: Hybrid (Most Common)
 
-1. **Start with conversation** - "I want to build [X]"
-2. **Let the LLM guide you** - It may suggest starting with a key component or designing the overall architecture first
-3. **Follow the natural flow** - Build specifications iteratively
-4. **Compile when ready** - Generate code only after thorough review
+1. **Start with a conversation.** Say "I want to build [X]".
+2. **Let the LLM guide you.** It can suggest that you start with one important component, or with the architecture.
+3. **Continue step by step.** Make the specification one question at a time.
+4. **Compile when you are ready.** Generate code only after a careful review.
 
-The key principle: **specification before implementation**. The exact path depends on your project and personal style.
+The most important rule: **specify before you implement**. The best path depends on your project and on how you prefer to work.
 
+## Contributions
 
-## Conclusion
-
-We welcome contributions to improve BluePrint! Please feel free to submit issues or pull requests.
+We welcome contributions to BluePrint. Please submit issues or pull requests.

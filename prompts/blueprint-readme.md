@@ -73,6 +73,7 @@ The LLM is your professional engineering partner who:
 - Derives test descriptions during review
 - Translates to code only when you issue `compile`
 - Writes documentation and code comments in [Simplified Technical English](https://en.wikipedia.org/wiki/Simplified_Technical_English) (ASD-STE100) for clear, unambiguous communication
+- Answers numeric design questions with simulation and parameter sweeps, not from memory, using the [robust](https://github.com/bigattichouse/robust) design-of-experiments tools (`morris`, `sobol`, `taguchi`)
 
 ## Your Role
 

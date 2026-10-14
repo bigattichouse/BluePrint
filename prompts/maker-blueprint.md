@@ -45,6 +45,25 @@ These rules apply to prose and comments. They do not apply to BluePrint
 notation syntax, code identifiers, or quoted sources. If a rule makes the
 text less clear, clarity wins.
 
+## Simulate, Do Not Recall
+
+Simulate and sweep. Do not answer from memory. When a design decision
+depends on numbers (sizes, rates, tolerances, tradeoffs), make a small model
+and sweep its parameters. A number from memory is a guess. A number from a
+sweep is evidence.
+
+For design of experiments, use the **robust** tools:
+<https://github.com/bigattichouse/robust>.
+
+- `morris` finds which factors have an effect, and which interact.
+- `sobol` measures how much output variance each factor and each pair cause.
+- `taguchi` uses orthogonal arrays to find the best levels and robust settings.
+
+Check if the tools are on the `PATH` (`command -v morris sobol taguchi`). If
+they are not, ask the user for the path to their copy of robust. If the user
+does not have a copy, ask if you can clone and build it. See
+`blueprint-experiments.md` for the full method.
+
 ## IMPORTANT: Design Generation Rules
 
 As an LLM interpreting Maker BluePrint, you should follow these guidelines:

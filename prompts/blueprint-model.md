@@ -63,6 +63,54 @@ text less clear, clarity wins.
 
 ---
 
+## Design of Experiments Tools: `robust`
+
+Use simulation and parameter sweeps to answer design questions. Do not
+answer from memory. A number from memory is a guess. A number from a sweep
+of the model is evidence, and the next sweep can check it.
+
+Use the **robust** suite for design of experiments:
+<https://github.com/bigattichouse/robust>. It is a set of small, fast
+command-line tools for Morris screening, Sobol variance attribution, Taguchi
+orthogonal arrays, and the stages around them.
+
+**Find the tools first.** Check if they are on the `PATH`
+(`command -v morris sobol taguchi`). If they are not, ask the user for the
+path to their copy of robust. The binaries are in `build/bin/` in that
+directory. If the user does not have a copy, ask if you can clone and build
+it: `git clone https://github.com/bigattichouse/robust`, then `make` in that
+directory. Do not write a replacement for a tool that already exists.
+
+**Use the methods in this order.** Each stage uses more runs on fewer factors.
+
+| Stage | Tool | Question | Best on |
+|---|---|---|---|
+| Screen | `morris` | Which factors have an effect? Which interact or are nonlinear? | Model |
+| Attribute | `sobol` | How much output variance does each factor and each pair cause? | Model |
+| Resolve | `ofat`, `grid` | Is that effect real? Which pair interacts? | Model |
+| Optimize | `taguchi` | Which level of each factor is best? Does the prediction hold (`taguchi confirm`)? Is the design robust to noise (`taguchi robust`)? | Model or bench |
+| Refine | `rsm` | Where exactly is the peak? | Model |
+
+`robust funnel` runs the screen and attribute stages in one command. It
+also writes a `.tgu` file for the bench.
+`report` makes a self-contained HTML page from the results.
+
+Morris and Sobol belong on the simulator, where a run costs milliseconds.
+Taguchi belongs on the bench, where a run costs hours and real noise exists.
+
+**How the tools run the model.** Each tool sets the factor values as
+environment variables with its own prefix (`MORRIS_x`, `SOBOL_x`,
+`TAGUCHI_x`, `OFAT_x`, `GRID_x`). Then it runs your model command. Write one
+run script that reads all of these prefixes and prints the metrics. Define
+the factors in a `.space` file. `taguchi` uses a `.tgu` file, which adds the
+array and an optional `noise:` section. When a program reads the results,
+use `--json`. The text tables are for people.
+
+The `examples/cookies/` directory in the robust repository shows the full
+workflow on one problem.
+
+---
+
 ## PHASE 0: Problem Framing
 
 Ask me these questions. Group them logically — don't dump all seven at once,
