@@ -32,8 +32,31 @@ RANGE = re.compile(
 SOURCE = re.compile(r"\bsource:", re.I)
 REQ_HEAD = re.compile(r"^Requirement\s+([\w.-]+)\s*(?:\[([^\]]*)\])?\s*:\s*$")
 EXP_HEAD = re.compile(r"^Experiment\s+([\w.-]+)\s*(?:\[([^\]]*)\])?\s*:\s*$")
-VERIFY_HEAD = re.compile(r"^Verify\b.*:\s*$")
+VERIFY_HEAD = re.compile(r"^(Verify|Validate)\b.*:\s*$")
 FIELD_WORDS = 25
+
+# A quoted or `code` span mentions a word; it does not use it.
+QUOTED = re.compile(r'"[^"]*"|\u201c[^\u201d]*\u201d|`[^`]*`')
+# An ID: letters, then "-<letters or digits>" parts, an optional Examples row.
+ID_TOKEN = re.compile(r"(?<![\w-])[A-Za-z]+(?:-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)+(?:\[\d+\])?")
+# A status marker such as "(M)" after the last sentence is not a sentence.
+MARKER = re.compile(r"\(\w{1,3}\)")
+SENTENCE_SPLIT = re.compile(r"(?<=[.?!])\s+(?=[A-Z0-9(])")
+PASSIVE = re.compile(r"\bshall\s+(?:not\s+)?be\s+([a-z][\w-]*)")
+IRREGULAR = set(
+    "given taken made done found seen known shown written built sent set run read kept held "
+    "left put shut cut brought bought caught taught told sold paid laid led".split())
+# Verbs for compound-obligation, in addition to the glossary verbs.
+VERBS = set(
+    "accept acknowledge activate adjust alert allow apply assign calculate cancel check clear "
+    "close command compare compute confirm connect contain continue control convert create "
+    "deactivate decrease delete deliver detect disable disconnect display enable encrypt enter "
+    "erase execute export generate give hold identify ignore import increase indicate initiate "
+    "inform keep limit load lock log maintain measure monitor notify open operate parse permit "
+    "prevent print process produce prompt provide read receive record reject release remove "
+    "report request reset respond restart restore retain return save select send set show shut "
+    "start stop store supervise supply switch terminate transmit trigger unlock update validate "
+    "verify write".split())
 
 
 class Finding:
@@ -61,20 +84,53 @@ def short(text, limit=60):
     return text if len(text) <= limit else text[:limit - 3] + "..."
 
 
-def detect_pattern(sentence):
-    """Return the EARS pattern of one requirement sentence, or None."""
+def detect_pattern(sentence, names=()):
+    """Return the EARS pattern of one requirement sentence, or None.
+
+    A comma can follow the keyword ("If, as a result, ..."). A glossary name
+    can start a ubiquitous requirement ("ETCS shall ...")."""
     s = sentence.lower()
-    if s.startswith("while "):
+
+    def starts(word):
+        return re.match(word + r"[ ,]", s) is not None
+
+    if starts("while"):
         return "complex" if re.search(r",\s*when ", s) else "state"
-    if s.startswith("when "):
+    if starts("when"):
         return "event"
-    if s.startswith("if "):
+    if starts("if"):
         return "unwanted"
-    if s.startswith("where "):
+    if starts("where"):
         return "optional"
-    if s.startswith("the "):
+    if starts("the"):
         return "ubiquitous"
+    for name in sorted(names, key=len, reverse=True):
+        if s.startswith(name + " ") and re.match(r"shall\b", s[len(name) + 1:]):
+            return "ubiquitous"
     return None
+
+
+def mask(text):
+    """Blank quoted and `code` spans, so that a mentioned keyword is not counted."""
+    return QUOTED.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def sentences(text):
+    """Split a requirement into sentences. A final status marker is not one."""
+    parts = SENTENCE_SPLIT.split(text)
+    return [p for p in parts if not MARKER.fullmatch(p.strip())] or [text]
+
+
+def glossary(text):
+    """The names and verbs of the Glossary blocks in ```blueprint fences."""
+    names, verbs = set(), set()
+    for fence in re.findall(r"```blueprint\n(.*?)```", text, re.S):
+        for key, out in (("names", names), ("verbs", verbs)):
+            m = re.search(key + r":\s*\[(.*?)\]", fence, re.S)
+            if m:
+                out.update(" ".join(w.strip().strip('"').lower().split())
+                           for w in m.group(1).split(",") if w.strip())
+    return names, verbs
 
 
 class Group:
@@ -89,12 +145,15 @@ class Group:
 
 
 class Linter:
-    def __init__(self, path):
+    def __init__(self, path, names=(), verbs=()):
         self.path = path
+        self.names, self.verbs = set(names), set(verbs)
         self.findings = []
         self.block = None      # "req" or "exp"
         self.group = None
         self.clause = None     # [keyword, text, line]
+        self.in_examples = False
+        self.ids = {}          # requirement and Verify IDs -> first line
 
     def add(self, line, severity, rule, message, text=""):
         self.findings.append(Finding(self.path, line, severity, rule, message, short(text)))
@@ -124,6 +183,7 @@ class Linter:
                 self.add(line, "warning", "one-assertion",
                          "Possible two assertions. Write one Expect for each check.", text)
             body = re.sub(r"\(source:[^)]*\)", "", text, flags=re.I)
+            body = ID_TOKEN.sub(" ", body)  # the digits of an ID are not a number
             if re.search(r"\d", body):
                 if not RANGE.search(body):
                     self.add(line, "warning", "numeric-range",
@@ -165,11 +225,12 @@ class Linter:
             self.add(line, "error", "no-sentence", "The requirement has no sentence.")
         else:
             low = sentence.lower()
-            n_shall = len(re.findall(r"\bshall\b", low))
+            masked = mask(low)
+            n_shall = len(re.findall(r"\bshall\b", masked))
             if n_shall != 1:
                 self.add(line, "error", "one-shall",
                          f"Use exactly one 'shall' (found {n_shall}).", sentence)
-            pattern = detect_pattern(sentence)
+            pattern = detect_pattern(sentence, self.names)
             if pattern is None:
                 self.add(line, "error", "ears-pattern",
                          "Start with 'The', 'When', 'While', 'If', or 'Where'.", sentence)
@@ -182,19 +243,45 @@ class Linter:
             elif tag and pattern and tag != pattern:
                 self.add(line, "warning", "tag-mismatch",
                          f"The tag is '{tag}', but the sentence is '{pattern}'.", sentence)
-            if re.search(r"(^|[\s,])it\s+shall\b", low):
+            if pattern and re.search(r"(^|[\s,])it\s+shall\b", masked):
                 self.add(line, "warning", "name-system", "Name the system. Do not write 'it'.", sentence)
             m = VAGUE.search(low)
             if m:
                 self.add(line, "warning", "vague-word",
                          f"'{m.group(0)}' is not observable. Use a number and a unit.", sentence)
-            if len(sentence.split()) > FIELD_WORDS:
+            parts = sentences(sentence)
+            if len(parts) > 1:
+                self.add(line, "warning", "one-sentence",
+                         "More than one sentence. Write one requirement for each.", sentence)
+            if max(len(p.split()) for p in parts) > FIELD_WORDS:
                 self.add(line, "warning", "long-sentence",
                          f"More than {FIELD_WORDS} words. Divide the requirement.", sentence)
+            m = PASSIVE.search(masked)
+            if m and ((len(m.group(1)) > 3 and m.group(1).endswith("ed"))
+                      or m.group(1) in IRREGULAR):
+                self.add(line, "warning", "passive-response",
+                         "The response is passive. Name the system that acts.", sentence)
+            m = re.search(r"\bshall\b", masked)
+            if m:
+                response = re.split(r"[.;](?:\s|$)", masked[m.end():])[0]
+                for verb in re.findall(r"\band\s+([a-z][\w-]*)", response):
+                    if verb != "shall" and (verb in VERBS or verb in self.verbs):
+                        self.add(line, "warning", "compound-obligation",
+                                 "The response joins two verbs with 'and'. "
+                                 "Write one requirement for each.", sentence)
+                        break
         if not r["because"]:
             self.add(line, "warning", "no-because", "Add a 'Because' sentence for the reviewer.")
         if r["verify"] == 0:
-            self.add(line, "error", "no-verify", "The requirement has no 'Verify' block.")
+            self.add(line, "error", "no-verify",
+                     "The requirement has no 'Verify' or 'Validate' block.")
+
+    def check_id(self, ident, line):
+        if ident in self.ids:
+            self.add(line, "error", "duplicate-id",
+                     f"The ID {ident} is also used at line {self.ids[ident]}.")
+        else:
+            self.ids[ident] = line
 
     def end_block(self):
         self.end_group()
@@ -213,6 +300,7 @@ class Linter:
             m = REQ_HEAD.match(line)
             if m:
                 self.end_block()
+                self.check_id(m.group(1), number)
                 self.block = "req"
                 self.req = dict(line=number, id=m.group(1), tag=m.group(2),
                                 text="", because=False, verify=0, in_head=True)
@@ -231,7 +319,19 @@ class Linter:
                 self.req["in_head"] = False
                 self.req["verify"] += 1
                 self.group = Group(number, is_experiment=False)
+                self.in_examples = False
+                words = line.split()
+                # "Verify V-012 name:" — an ID is optional; a used ID is unique
+                if len(words) > 2 and re.fullmatch(r"[A-Za-z]+-[\w.-]*\w", words[1]):
+                    self.check_id(words[1], number)
                 continue
+            if self.group and kw == "examples":
+                self.flush_clause()
+                self.in_examples = True
+                continue
+            if self.in_examples and line.startswith("|"):
+                continue  # an Examples row is data, not text of a clause
+            self.in_examples = False
             if kw == "because":
                 self.flush_clause()
                 if self.block == "req":
@@ -252,7 +352,8 @@ class Linter:
 
 
 def lint_text(path, text):
-    return Linter(path).run(text.splitlines())
+    names, verbs = glossary(text)
+    return Linter(path, names, verbs).run(text.splitlines())
 
 
 SELFTEST_GOOD = """\
@@ -275,6 +376,37 @@ Experiment E3 [thermal]:
   Expect a current of 1.8 A to 2.1 A (source: model thermal.solve).
   If the current is more than 2.1 A, then examine the module.
   If the current is less than 1.8 A, then update R_internal.
+
+```blueprint
+Glossary Train { names: [ETCS], verbs: [supervise] }
+```
+
+Requirement R5 [ubiquitous]:
+  ETCS shall supervise the shunting speed.
+  Because a fast shunting move can derail the train.
+  Level: software.
+  Derives: R1.
+
+  Verify V-005 speed:
+    Given a train in shunting mode.
+    When the speed is <speed>.
+    Expect the brake state to be <state>.
+    Examples:
+      | speed | state | note and comment |
+      | 30 km/h | released | below the limit |
+
+  Validate V-006 driver:
+    When a driver moves the train in a yard.
+    Expect the driver to stop the train before the limit (source: trial T-1).
+    Expect the trace row for V-005 to have the status PASS.
+
+Requirement R6 [unwanted]:
+  If, after a reset, the sensor fails, then the linter shall report the rule `one-shall` once.
+  Because a quoted keyword is a mention. (M)
+
+  Verify V-007 mention:
+    When the linter reads the sentence.
+    Expect one finding.
 """
 
 SELFTEST_BAD = """\
@@ -288,6 +420,22 @@ Requirement R3:
     Expect the account to be locked and an email to be sent.
     Given an account.
 
+Requirement R4:
+  The account shall be locked and send an email. The service records the event.
+  Because of attacks.
+
+  Verify V-008 a:
+    When it fails.
+    Expect a lock.
+
+Requirement R4:
+  The service shall lock the account.
+  Because of attacks.
+
+  Verify V-008 b:
+    When it fails.
+    Expect a lock.
+
 Experiment E4:
   When you apply 12 V.
   Measure the current.
@@ -300,6 +448,8 @@ SELFTEST_EXPECTED = {
     "one-shall", "tag-mismatch", "name-system", "vague-word", "no-because", "no-verify",
     # R3
     "ears-pattern", "one-assertion", "clause-order", "no-when",
+    # R4 (twice)
+    "passive-response", "compound-obligation", "one-sentence", "duplicate-id",
     # E4
     "numeric-range", "numeric-source", "branches",
 }

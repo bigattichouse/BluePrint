@@ -151,8 +151,13 @@ Requirement R1 [event]:
 
 Rules:
 
-- One `shall` in each requirement.
-- Name the system in each requirement. Do not write "it."
+- One `shall` in each requirement, and one response verb. "Shall lock the
+  account and send an email" has two responses. Write two requirements.
+- One sentence in each requirement. Put notes in the `Because` sentence.
+- Name the system in each requirement. Do not write "it." The system name
+  can come from the glossary: "ETCS shall supervise the shunting speed."
+- Name the system that acts. "The speed shall be indicated" hides the
+  actor. Write "The speedometer shall indicate the speed."
 - The response must be observable. "Shall be secure" is not observable.
   "Shall reject a login attempt without a session token" is observable.
 - Do not use vague words: "fast," "easy," "appropriate," "as needed,"
@@ -204,6 +209,41 @@ Rules:
   checks with "and."
 - An `Expect` must not repeat the `shall` sentence. It names the observation
   that proves the `shall` sentence.
+
+### Optional: IDs, Validate, levels, and Examples
+
+Use these lines when a tool traces the tests (for example `required`).
+The EARS linter accepts all of them.
+
+```
+Requirement SW-012 [event]:
+  When the tank is full, the controller shall close the valve.
+  Because an open valve can flood the tank.
+  Level: software.
+  Derives: SYS-004.
+
+  Verify V-031 full-tank:
+    Given an open valve.
+    When the level is <level>.
+    Expect the valve state to be <state>.
+    Examples:
+      | level | state  |
+      | 100 % | closed |
+      | 99 %  | open   |
+
+  Validate V-032 operator:
+    When an operator fills the tank in the plant.
+    Expect no overflow.
+```
+
+- `Verify V-031 name:` gives the block an ID. A test names the ID at the
+  start of its name: `V-031 full-tank`. Do not use one ID two times.
+- `Validate` uses the same clauses as `Verify`. Use it for a test of the
+  user need in the use environment. A bench test cannot validate.
+- `Level:` and `Derives:` come after `Because`. `Derives` names the parent
+  requirement, one level up or at the same level.
+- `Examples:` is a table after the clauses. Each row is one test case.
+  `<level>` in a clause names a column.
 
 ---
 
@@ -282,8 +322,8 @@ meaning, noun clusters, or the glossary.
 
 Some findings are false. A proper name can cause a false finding: the tool
 name "robust" causes a `marketing-adjective` finding. A keyword can cause a
-false finding: `Verify` and the verb "check" cause a `synonym-rotation`
-finding. A counter-example that shows a bad sentence also causes a finding.
+false finding: `Verify` and `Validate` and the verb "check" cause a
+`synonym-rotation` finding. A counter-example that shows a bad sentence also causes a finding.
 Do not change a proper name, a keyword, or a counter-example to satisfy the
 linter. Tell the user about the false finding.
 
@@ -303,19 +343,23 @@ these rules:
 
 | Rule | Check |
 |---|---|
-| `one-shall` | Each requirement has exactly one `shall` |
-| `ears-pattern` | Each requirement starts with "The", "When", "While", "If", or "Where" |
+| `one-shall` | Each requirement has exactly one `shall`. A quoted or `` `code` `` word does not count |
+| `ears-pattern` | Each requirement starts with "The", "When", "While", "If", "Where", or a glossary name |
 | `if-then` | Each `If` requirement or clause has "then" |
 | `tag-mismatch` | The pattern tag agrees with the sentence |
 | `name-system` | The requirement names the system, not "it" |
 | `vague-word` | The requirement has no vague words ("fast," "easy," "appropriate") |
-| `long-sentence` | The requirement has 25 words or fewer |
+| `long-sentence` | Each sentence of the requirement has 25 words or fewer |
+| `one-sentence` | The requirement is one sentence. A final marker such as "(M)" is not a sentence |
+| `passive-response` | The response is not passive ("shall be indicated") |
+| `compound-obligation` | The response does not join two verbs with "and" |
+| `duplicate-id` | The document uses each requirement ID and each `Verify` ID one time only |
 | `no-because` | Each requirement has a `Because` sentence |
-| `no-verify` | Each requirement has at least one `Verify` block |
+| `no-verify` | Each requirement has at least one `Verify` or `Validate` block |
 | `no-when`, `no-expect` | Each `Verify` block and experiment has a `When` and an `Expect` |
 | `clause-order` | `Given`/`While` → `When` → `Measure` → `Expect` → `If … then` |
 | `one-assertion` | An `Expect` does not join two checks with "and" |
-| `numeric-range`, `numeric-source` | A numeric `Expect` has a range and a source, or is marked `(exact)` |
+| `numeric-range`, `numeric-source` | A numeric `Expect` has a range and a source, or is marked `(exact)`. The digits of an ID such as V-031 are not a number |
 | `measure-expect` | Each `Measure` has an `Expect` |
 | `branches` | An experiment with a ranged `Expect` has `If … then` clauses for both ends |
 

@@ -11,6 +11,14 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Added
 
+- `ears-lint` rules `one-sentence`, `passive-response`,
+  `compound-obligation`, and `duplicate-id`. They come from the
+  `required` project, which tested them on 712 public requirements (PURE)
+  and on 539 Zephyr RTOS requirements.
+- `blueprint-specification.md`: optional `Verify` IDs, `Validate` blocks,
+  `Level:` and `Derives:` lines, and `Examples:` tables. `ears-lint`
+  accepts them.
+
 - `blueprint` command that lists the installed prompts, references, and tools,
   with their paths and a one-sentence summary. `blueprint path NAME` and
   `blueprint show NAME` give one item.
@@ -54,6 +62,15 @@ There is no released version yet. All changes are in the Unreleased section.
 - `blueprint-mini.md` for small and local LLMs, `database-patterns.md`, and
   the `debug` prompt (2025-05-16).
 - The core BluePrint prompt and user instructions (2025-05-15).
+
+
+### Fixed
+
+- `ears-lint`: a comma after the first keyword ("If, as a result, …")
+  no longer gives `ears-pattern`. A glossary name can start a ubiquitous
+  requirement. A quoted or `code` "shall" is not counted. `name-system`
+  does not repeat an `ears-pattern` finding. The digits of an ID in an
+  `Expect` are not a number. `long-sentence` counts each sentence.
 
 ### Changed
 
