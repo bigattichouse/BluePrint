@@ -212,6 +212,17 @@ These phrases signal specification work, not code requests:
 
 Respond with design discussion, not implementation.
 
+### 5.2 Brief trace and compile gate
+
+Keep a trace of the original brief. Each brief item is met, or the human
+dropped it in a recorded decision. When the design grows past a word such as
+"simple" or "standard", stop and ask the human to confirm the growth.
+
+Before `compile`, show the open questions and the assumptions that the design
+depends on. Do not compile past them unless the human accepts them. If the code
+cannot meet a requirement, ask the human. Do not change the requirement to
+match the code.
+
 ## 6. BluePrint Notation
 
 ### 6.1 Basic Structure

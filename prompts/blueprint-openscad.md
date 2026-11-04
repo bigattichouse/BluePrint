@@ -315,6 +315,22 @@ These phrases signal specification work, not code requests:
 
 Respond with design discussion and a coupon plan, not code.
 
+### 5.2 Compile gate
+
+Do not compile until each item is true, or the human accepts the open item in
+writing:
+
+- The mating parts that set the size are measured, or their risk is accepted.
+- The material is stated, with its limit against the part's environment.
+- The assembly sequence exists (section 7.8).
+- A part that heats, cools, or carries load has a first-principles estimate
+  from **blueprint-model.md** before geometry. The estimate follows the path of
+  the energy or load through every part.
+
+If the model cannot meet a requirement, stop and ask. Do not change the
+requirement to match the model. Record each changed requirement and the human
+decision.
+
 ---
 
 ## 6. BluePrint Notation for OpenSCAD
@@ -461,6 +477,29 @@ Never write "0.2 mm tolerance" when you mean "0.2 mm extra clearance per
 side." Tolerance, clearance, and measurement uncertainty are different
 concepts. State what is allowed to vary and how the gap is defined.
 
+**Every named clearance carries intent.** A clearance parameter that does
+not say what it protects is a magic number. Each one states:
+
+1. **The two features it separates** (which part face to which part face).
+2. **The intent**: assembly fit, heat protection, foam or fluid channel,
+   motion, or inspection access.
+3. **The check that verifies it**: a CAD assertion, a render, or a coupon.
+
+```blueprint
+Clearance CoverToBoard {
+  between:  [CoverInnerFace, BoardComponentTop],
+  per_side: false,
+  value:    {value: 3.0, source: "spec decision revA"},
+  intent:   "assembly fit: the cover closes without touching a component",
+  verified_by: "intersection of the cover and the virtual board has zero volume"
+}
+```
+
+A clearance may be `derived` (a computed function of other parameters). The
+derived value must still name its intent and its check. An assertion on
+parameters finds arithmetic errors only. It does not verify a clearance. See
+section 11.7.
+
 ### 7.5 Behaviors, tests, and coupons
 
 **Test (formal):**
@@ -510,6 +549,75 @@ When encountering references:
 3. Request the file content if detailed knowledge is necessary
 4. Ensure your implementation is compatible with the expected interface
 
+### 7.7 Virtual (non-printed) mating parts
+
+An assembly is not only the parts you print. It also holds parts you buy or
+measure: a board, a display, a fastener, a container. Model these as **virtual parts**: real geometry that carries the true
+mating dimensions, marked `virtual` so it is never exported to a slicer.
+
+Rules:
+
+1. **Name the virtual part** and mark it. In the `.scad` source, every
+   virtual part module carries a `// VIRTUAL: <why> <source>` comment and is
+   only ever used in render/assembly contexts, never in an STL export.
+2. **Carry the real interface dimension.** A virtual jar must have the true
+   OD, not a placeholder. The clearance that matters is measured against the
+   virtual part.
+3. **Virtual parts are render-only.** They appear in assembly, exploded, and
+   section renders so the fit can be checked. They never reach `exports/`.
+4. **The explicit export list keeps a part out of an export.** Name every
+   printable part on the list. A part not on the list is render-only. Make the
+   model refuse to export a part that is not on the list (an `assert`), so a
+   virtual part cannot reach a slicer by a typing error.
+
+```blueprint
+Part VirtualBoard {
+  kind: virtual,          // never exported
+  reason: "bought, measured",
+  source: "calipers, 2026-10-28"
+  w:    {value: 50.0, source: "measurement"}
+  l:    {value: 80.0, source: "measurement"}
+}
+```
+
+The whole point: you can check every real clearance against the part that
+will actually be there, before you order or print anything.
+
+A seller's figure is a lead, not a measurement. If sources disagree, measure
+the part.
+
+### 7.8 Assembly sequence
+
+A seated part that does not collide may still have no way in. Write the order
+of assembly. For each part, state its insertion path and how it is removed or
+retained. Include bought parts, wires, adhesive, foam, and fingers or tools.
+
+Check each path: sweep the part's envelope along the path and intersect it with
+the parts already in place. The volume must be zero, or the overlap must be a
+named fit. An injected or poured fill also needs a mold, vents, and a pour step.
+
+**Keep the sequence as data in the model.** Write one list: step, parts,
+removal direction, travel. The sweep checks, the exploded view, and the step
+pictures all read that list. Three hand-written copies of the paths drift
+apart, and one of them is then wrong without a sign.
+
+```scad
+// [step, parts, removal direction, travel]
+sequence = [
+  ["base on the bench",  ["base"],          [0, 0, 0],  0],
+  ["board on the posts", ["board"],         [0, 0, 1],  40],
+  ["cover",              ["cover", "lens"], [0, 0, 1],  30],
+];
+```
+
+A sampled sweep can step over a collision. State the step. It must be less
+than the thinnest wall of the moving part plus the thinnest wall of the fixed
+parts, measured along the path.
+
+**Show the sequence as step pictures.** One picture per step: parts already in
+place in grey, the part being added in a contrasting color, and an arrow on its
+path. A person must be able to build the assembly from the pictures alone.
+
 ---
 
 ## 8. The digital-to-physical pipeline
@@ -525,6 +633,7 @@ A part crosses several representations. Each serves a different purpose.
 | Drawing | PDF / DXF | Communicates dimensions, tolerances, notes | Ambiguity, incomplete spec |
 | CAM project | Native CAM file | Geometry into machine paths | Wrong tool, work zero, stock |
 | Machine instructions | G-code or machine output | Drives the machine | Wrong postprocessor, unsafe setup |
+| Render artifacts | PNG snapshots (parts, assembly, exploded, section) | Evidence the model built and fits, for review without OpenSCAD | Irreproducible camera, missing views, stale renders |
 | Inspection record | Measurements, photos | Shows whether the part met the spec | No traceability |
 
 OpenSCAD is primarily a geometry authoring tool. It creates solid geometry and
@@ -651,7 +760,41 @@ route:
 Repeat this check after changing software, file format, import settings, or
 machine workflow.
 
-### 11.2 Coupon log
+### 11.2 Render artifacts and per-part export
+
+A model produces two kinds of artifacts with different rules.
+
+**Printable parts become STL. One STL per part.**
+- The export list is explicit: every printable part names its output file.
+  A part not on the list is render-only.
+- Never export an assembly as one STL for fabrication.
+- Virtual parts never appear in the export list.
+- Each STL must be watertight (closed manifold). Verify with an independent
+  mesh check (each edge shared by exactly two triangles) and a bounding-box
+  scale check against a known dimension.
+
+**Assemblies become renders, not STL.**
+- Assembly, exploded, and section views are PNG snapshots: evidence for
+  review, not geometry for a slicer.
+- The standard set: one snapshot per printable part, one assembly view, one
+  exploded view, one section view cut through a named datum plane, and one
+  picture per assembly step (section 7.8).
+- Renders must be reproducible: fixed camera position and orientation,
+  fixed `$fn`, fixed output size. Record the exact command for every view
+  (for example a `scripts/render.sh`), so a stale or drifting render is
+  visible.
+- Each view states the question it answers ("does the slot open to the bore?").
+  Look at the image and record the answer. A cropped or unreadable view fails.
+- An exploded view is driven by a named `explode` parameter. It moves each part
+  along that part's insertion path and never changes a part's shape.
+  `explode=0` must reproduce the assembly view exactly.
+- A section cut is a render-only boolean. It must not leak into any export.
+- A section view must tell the parts apart. In an OpenSCAD 2021.01 preview, one
+  `difference()` over the whole assembly paints every cut face one color.
+  Cut each part on its own and evaluate it (`color(c) render() difference()
+  {...}`), so each cut face keeps its part color.
+
+### 11.3 Coupon log
 
 Record each test round. A coupon is only valuable if its result can be applied
 to later parts.
@@ -673,7 +816,7 @@ to later parts.
 | Selected value and reason | |
 | Remaining uncertainties | |
 
-### 11.3 Inspection record
+### 11.4 Inspection record
 
 Inspect the physical part, not only the model. Measure the functional feature
 and its relationship to the datum. Record the result against the acceptance
@@ -681,7 +824,7 @@ criteria. Check the characteristics tied to function: overall size, hole and
 slot dimensions and spacing, flatness, perpendicularity of mating faces,
 cracks or warping, insertion force, clearance in motion, and fastener seating.
 
-### 11.4 Root cause: design error vs process error
+### 11.5 Root cause: design error vs process error
 
 If a dimension is wrong, find where the error entered before you change
 anything.
@@ -696,7 +839,7 @@ anything.
 | Parts fit alone but the assembly binds | Stack-up, alignment, warping, wrong datum | Measure the assembly interfaces together |
 | Snap tab breaks | Poor orientation, thin root, sharp corner, fatigue | Test a geometry/orientation coupon |
 
-### 11.5 Fabrication handoff notes
+### 11.6 Fabrication handoff notes
 
 A file that opens successfully is not a complete manufacturing handoff. For
 another person or shop, provide at least:
@@ -710,6 +853,37 @@ another person or shop, provide at least:
 - Required finish or post-processing
 - Coupon results or machine-specific notes
 - Inspection method and acceptance criteria
+
+### 11.7 Geometry checks
+
+Test the solids and the exports, not the parameters. A watertight STL at the
+correct scale can still be the wrong part.
+
+- **Overlap is a gate.** Intersect each pair of parts, seated and along each
+  insertion path. A nonzero volume fails unless it is a named fit. Report the
+  volume. A check that errors or does not run is a failure, not a pass.
+- **Check features.** For each hole, slot, and window, test that a probe solid
+  passes through the exported part. Check a curved or flat mismatch at the edge
+  of the feature, not only on the centerline.
+- **Size each probe from what must pass, not from the hole.** The probe for a
+  fill port is the nozzle. The probe for a lead hole is the lead bundle. A probe
+  made from the hole's own parameter moves with the hole and cannot fail.
+- **Prove that each kind of check can fail.** Seed one fault per kind (seated
+  overlap, sweep, feature probe), such as an oversize part or an undersize
+  hole, and confirm that the check catches it. A fault that passes means the
+  check is blind.
+- **Read the tool's result codes exactly.** In OpenSCAD, an empty
+  intersection stops the export with "Current top level object is empty."
+  That is the zero result. Parts that touch on a face give a non-manifold
+  intersection; in an overlap check only, accept that warning, measure the
+  volume, and report the contact. Every other warning or error fails the check.
+- **Test language assumptions on the installed version.** Run a one-line file
+  and measure the result. Treat warnings as failures. OpenSCAD 2021.01 ignores
+  `cube(center=[...])`, and `abs()` does not accept a module.
+  `rotate([90,0,0])` takes +Z to -Y. A range `[3:1]` runs 1, 2, 3 with only a
+  DEPRECATED warning.
+- **Run the checks as a script.** Keep them in the project (for example
+  `cad/tests/check_cad.py`). A check that lives in a chat log does not run again.
 
 ---
 
@@ -725,8 +899,13 @@ sensor-bracket/
 │   ├── requirements.md
 │   └── measurements.csv
 ├── cad/
-│   ├── sensor_bracket.scad
-│   └── fit_coupon.scad
+│   ├── sensor_bracket.scad      # one file; `part` selects each export and the views
+│   ├── assembly-steps.scad      # one picture per step, read from `sequence`
+│   ├── render.sh                # every view, with its camera and its question
+│   ├── export-stl.sh            # the explicit export list
+│   ├── tests/check_cad.py       # exports, overlaps, sweeps, probes, seeded faults
+│   ├── preview/                 # part, assembly, exploded, and section pictures
+│   └── assembly/                # step-NN.png
 ├── exports/
 │   ├── revA/
 │   │   ├── sensor_bracket.stl
@@ -771,6 +950,11 @@ filenames such as `sensor_bracket_revA.scad` and
     competent check.**
 13. **Do not change four things at once.** Change one variable at a time, or
     the result is uninterpretable.
+14. **Do not verify a parameter with a parameter.** Check the geometry.
+15. **Do not change a requirement to make a model pass.** Ask the human.
+16. **Do not accept a render you have not looked at.**
+17. **Do not size a probe from the hole it probes.**
+18. **Do not keep the assembly paths in more than one place.**
 
 ---
 
@@ -785,6 +969,12 @@ filenames such as `sensor_bracket_revA.scad` and
 [ ] Each clearance stated as per-side or diametral
 [ ] Risky fits validated by a coupon before the full part
 [ ] Process limits respected (walls, overhangs, kerf, tool radius)
+[ ] Compile gate met: measured parts, material, sequence, energy/load estimate
+[ ] Assembly sequence written as data; every insertion path swept, step stated
+[ ] One picture per assembly step
+[ ] Overlap and feature checks run on solids as a script; probes sized from the mating part
+[ ] One seeded fault per kind of check was caught
+[ ] Each render answers a stated question; the answer is recorded
 [ ] Render checked for errors, intersections, non-manifold geometry
 [ ] Export verified for units and scale in the receiving program
 [ ] Inspection record measures the functional feature, not just the box

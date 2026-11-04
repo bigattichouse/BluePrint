@@ -446,7 +446,8 @@ it enters the build:
   actually solder.
 - **Rated** — voltage, current, power, and thermal ratings cover the design
   point with margin.
-- **Verifiable** — a datasheet link is recorded.
+- **Verifiable** — the datasheet link is recorded, with its fetch date and
+  revision, so the row can be re-checked later.
 
 ```blueprint
 BillOfMaterials SensorController {
@@ -456,7 +457,7 @@ BillOfMaterials SensorController {
     {ref: "U2", qty: 1, name: "temperature sensor", part: "TMP36",
      package: "TO-92", supplier: "TBD", verified: false},
     {ref: "R1", qty: 1, name: "resistor", part: "10k 1/8W 5%",
-     package: "0805", supplier: "TBD", verified: true},
+     package: "0805", supplier: "TBD", verified: false},
     {ref: "C1", qty: 1, name: "capacitor", part: "100 uF 10 V ceramic",
      package: "1210", supplier: "TBD", verified: false},
     {ref: "D1", qty: 1, name: "reverse-polarity diode", part: "1N5819",
@@ -471,11 +472,12 @@ BillOfMaterials SensorController {
 ```
 
 Keep a part ledger next to the BOM. Update `verified` only when the check is
-done, and record who or what verified it.
+done, and record who or what verified it. Every row carries the exact source,
+the datasheet revision, and the fetch date — see §11.2 for the full rule.
 
-| Part | Datasheet link | In stock | Package solderable | Verified by |
-|---|---|---|---|---|
-| (part number) | (URL) | yes/no | (package, yes/no) | (name, date) |
+| Part | Datasheet (exact source) | Rev | Fetched | In stock | Package solderable | Status | Verified by |
+|---|---|---|---|---|---|---|---|
+| (part number) | (URL / doc id) | (rev) | (YYYY-MM-DD) | yes/no | (package, yes/no) | (verified / candidate / rejected) | (name, date) |
 
 ### 7.4 Nets and connections
 
@@ -560,7 +562,7 @@ Safety is a gate, not a note. When the circuit touches mains electricity,
 high-energy batteries, chargers, or high voltage:
 
 ```blueprint
-Safety YogurtMakerController {
+Safety HeaterController {
   mains: true,
   energy_storage: "none",
   gate: "competent person reviews against datasheets before first power-up",
@@ -581,6 +583,26 @@ Rules:
   damage temperature of what it heats. Firmware off-logic is the first layer;
   the fuse is the last. A self-regulating element (for example a PTC heater)
   is a second layer, not a replacement for the fuse.
+- **Size a heating element at the supply voltage.** For an element sold by
+  resistance per length R', the length for power P at voltage V is
+  V^2 / (P R'). State the power per length and per area, and the power range
+  from the R' tolerance. A repurposed element (for example wire cut from a
+  mains heating pad) loses its original rating and controller. Treat it as
+  unrated.
+- **Estimate the stuck-on case.** Find the steady rise if the control sticks
+  closed: P / G, where G is the heat loss conductance from
+  **blueprint-model.md**. Good insulation makes G small, so a fixed-resistance
+  element can rise far past every material limit. The independent layer must
+  trip below the lowest limit on the heat path.
+- **When the element changes, check the layer list again.** A fixed-resistance
+  element (carbon fiber, nichrome) does not self-regulate. A change from a PTC
+  element removes a layer. Add a replacement layer, or record the human decision.
+- **Each protection and sensor has a physical location.** State where it mounts,
+  what it measures, and its normal temperature there. A fuse rated near the
+  element's own temperature must not touch the element in normal use.
+- **Datasheet limits go to the mechanical design.** Contact method, mounting,
+  and temperature limits are interface requirements. Hand them to
+  **blueprint-openscad.md** with the part.
 - **Prefer certified supplies.** A UL/CE-marked adapter moves the mains
   circuitry into a proven component and leaves the custom work below the SELV
   limit. That shrinks the safety gate to the custom low-voltage side.
@@ -868,11 +890,26 @@ primary source (datasheet)
 
 Keep the ledger next to the BOM. Update it as parts are confirmed.
 
-| Part | Datasheet link | In stock | Package solderable | Verified by |
-|---|---|---|---|---|
-| (part number) | (URL) | yes/no | (package, yes/no) | (name, date) |
+A row is not complete until every cell is filled. In particular, every part
+carries a **fetch date** (the day the datasheet or listing was read) and an
+**exact source** (the URL and, where the source is a document, its revision or
+part number). A figure with no fetch date is a guess, not a datum: published
+figures age, and a number without a date cannot be re-checked.
 
-A part with an empty datasheet link is not in the BOM. It is a candidate.
+| Part | Datasheet (exact source) | Rev | Fetched | In stock | Package solderable | Status | Verified by |
+|---|---|---|---|---|---|---|---|
+| (part number) | (URL / doc id) | (rev) | (YYYY-MM-DD) | yes/no | (package, yes/no) | (verified / candidate / rejected) | (name, date) |
+
+- **Status** is one of `verified`, `candidate`, or `rejected`. A part with an
+  empty datasheet link, a product-line lead, or an unconfirmed figure is a
+  `candidate`, not a verified part. It stays out of the BOM until verified.
+- **Fetched** is the date the source was read. If the source changes or the
+  date is old, re-fetch and update the row.
+- **Rev** is the datasheet revision or document identifier. Two datasheets for
+  the same part number with different revisions are different parts.
+- A part is `verified` only when the datasheet is on file, the fetch date and
+  revision are recorded, the ratings cover the design point, and the stock and
+  package cells are answered.
 
 ### 11.3 Measurement log
 
@@ -990,7 +1027,8 @@ measurement log linked together. Use clear names such as
 [ ] Requirements written by the human before any design
 [ ] Real parts chosen; datasheets obtained and linked
 [ ] BOM complete; every part exists, in stock, in a solderable package
-[ ] Part ledger filled in with datasheet links and verification names
+[ ] Part ledger filled in: exact source, datasheet revision, fetch date, status,
+    and verification name for every part
 [ ] Every calculated value shows its working
 [ ] Ratings respected: voltage, current, power, thermal, with margin stated
 [ ] No floating supply pins; no pin conflicts
@@ -999,6 +1037,10 @@ measurement log linked together. Use clear names such as
 [ ] Firmware state table complete; every transition and safety action named
 [ ] Firmware host tests pass on the PC before any flash
 [ ] Safety gate passed (if mains / battery / high voltage) and recorded
+[ ] Each sensor and protection has a physical location and normal temperature
+[ ] Heating element sized at the supply voltage; stuck-on rise estimated;
+    the layer list checked again after any element change
+[ ] Contact method and temperature limits handed to the mechanical design
 [ ] ERC clean; DRC clean (for layouts); simulation done where it matters
 [ ] Prototype powered from a current-limited supply
 [ ] Measurement log: expected vs measured, pass/fail, instrument named
