@@ -16,7 +16,7 @@ BluePrint is a set of prompt files and small tools. You can use the prompts with
 You need Python 3 and Git.
 
 ```sh
-git clone --recurse-submodules https://github.com/bigattichouse/BluePrint
+git clone https://github.com/bigattichouse/BluePrint
 cd BluePrint
 make install
 ```
@@ -105,7 +105,7 @@ STE is a controlled language from the aerospace industry. It uses short sentence
 
 BluePrint includes two linters. Both use Python 3.
 
-- **`ste-lint`** finds passive voice, long sentences, synonyms, and other structural STE problems. It does not examine meaning. It comes from [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill), which is a Git submodule in `tools/asd-ste100-skill`.
+- **`ste-lint`** finds passive voice, long sentences, synonyms, and other structural STE problems. It does not examine meaning. It comes from [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT), and BluePrint keeps a copy in `tools/asd-ste100-skill` with the option `--blueprint-spec` added (see `VENDORED.md` there).
 - **`ears-lint`** examines requirements in the `blueprint-specification` format: EARS patterns, one `shall` in each requirement, `Verify` blocks, and `Expect` clauses. It uses only the Python standard library.
 
 ```sh

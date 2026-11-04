@@ -308,8 +308,15 @@ copy of BluePrint. If the user does not have a copy, ask if you can clone
 ### STE Linter
 
 The `asd-ste100-skill` project has a linter for the structural STE rules:
-<https://github.com/danyuchn/asd-ste100-skill>. BluePrint includes it as a
-Git submodule in `tools/asd-ste100-skill`, and `make install` installs it.
+<https://github.com/danyuchn/asd-ste100-skill> (MIT). BluePrint keeps a
+copy in `tools/asd-ste100-skill`, and `make install` installs it. The
+copy adds `--blueprint-spec`: block headings are markup, quoted text is
+cited evidence, and *verify* and *validate* are keywords. Use it for a
+specification file:
+
+```sh
+python3 -I "$(blueprint path ste-lint)" --blueprint-spec spec/requirements.md
+```
 
 ```sh
 python3 -I "$(blueprint path ste-lint)" FILE.md          # text report

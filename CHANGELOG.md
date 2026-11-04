@@ -11,6 +11,13 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Added
 
+- `ste-lint --blueprint-spec` (`tools/asd-ste100-skill`): reads
+  a `blueprint-specification` file. A block heading (`Requirement REQ-001
+  [event]:`, `Verify V-012 name:`) is markup and ends the prose block,
+  text in double quotes is cited evidence and is not checked, and
+  *verify* and *validate* are two keywords, not synonyms. Without the
+  flag, nothing changes. From the assurance project, where `ste-lint` is
+  a gate.
 - `ears-lint` rules `one-sentence`, `passive-response`,
   `compound-obligation`, and `duplicate-id`. They come from the
   `required` project, which tested them on 712 public requirements (PURE)
@@ -73,6 +80,13 @@ There is no released version yet. All changes are in the Unreleased section.
   `Expect` are not a number. `long-sentence` counts each sentence.
 
 ### Changed
+
+- `tools/asd-ste100-skill` is a copy of
+  [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT),
+  not a Git submodule. BluePrint can change it (`--blueprint-spec`) and
+  push without write access to the upstream repository. `VENDORED.md`
+  and the header of each changed file give the origin and the changes.
+  `git clone` needs no `--recurse-submodules`.
 
 - The README is in Simplified Technical English. It lists all prompt files.
 - The main prompt is a dialectic process: one question at a time, then a
