@@ -11,6 +11,13 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Added
 
+- `ste-lint --blueprint-spec` (`tools/asd-ste100-skill`): reads
+  a `blueprint-specification` file. A block heading (`Requirement REQ-001
+  [event]:`, `Verify V-012 name:`) is markup and ends the prose block,
+  text in double quotes is cited evidence and is not checked, and
+  *verify* and *validate* are two keywords, not synonyms. Without the
+  flag, nothing changes. From the assurance project, where `ste-lint` is
+  a gate.
 - `ears-lint` rules `one-sentence`, `passive-response`,
   `compound-obligation`, and `duplicate-id`. They come from the
   `required` project, which tested them on 712 public requirements (PURE)
@@ -74,23 +81,13 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Changed
 
-- Hardware prompts, from building a yogurt maker with them (dogfood, 22
-  flaws). `blueprint-openscad.md`: every named clearance states its intent;
-  virtual (bought) parts in assemblies, never exported; an explicit export
-  list; reproducible renders that each answer a stated question; a compile
-  gate; the assembly sequence as one data list that the collision sweeps,
-  the exploded view, and the step pictures read; geometry checks on solids,
-  run as a script, with probes sized from the mating part and one seeded
-  fault per kind of check; OpenSCAD 2021.01 behavior to test. Examples are
-  generic.
-- `blueprint-electronics.md`: a part ledger with source, revision, fetch
-  date, and status; each safety layer has a location; datasheet limits go to
-  the mechanical design; size a heating element at the supply voltage,
-  estimate the stuck-on rise, and check the layer list again when the
-  element changes.
-- `blueprint-prompt.md`: compile entry conditions, no requirement changed to
-  match a model without a human decision, and a brief trace so a brief item
-  cannot disappear.
+- `tools/asd-ste100-skill` is a copy of
+  [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT),
+  not a Git submodule. BluePrint can change it (`--blueprint-spec`) and
+  push without write access to the upstream repository. `VENDORED.md`
+  and the header of each changed file give the origin and the changes.
+  `git clone` needs no `--recurse-submodules`.
+
 - The README is in Simplified Technical English. It lists all prompt files.
 - The main prompt is a dialectic process: one question at a time, then a
   section-by-section review with derived tests (2025-12-14).
