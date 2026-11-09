@@ -18,14 +18,11 @@ PYTHON  ?= python3
 
 STE_SKILL := tools/asd-ste100-skill
 
-.PHONY: all install link uninstall test submodules
+.PHONY: all install link uninstall test
 
 all: test
 
-submodules:
-	@test -f $(STE_SKILL)/SKILL.md || git submodule update --init
-
-install: submodules
+install:
 	install -d $(BINDIR) $(DATADIR)/prompts $(DATADIR)/tools/ears-lint
 	install -m 0755 bin/blueprint $(BINDIR)/blueprint
 	install -m 0644 catalog.tsv README.md CHANGELOG.md LICENSE $(DATADIR)/
@@ -39,7 +36,7 @@ install: submodules
 	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills $(SKILL_FLAGS); fi
 	@echo "Installed. Run 'blueprint' to see the prompts and tools."
 
-link: submodules
+link:
 	install -d $(BINDIR)
 	ln -sf $(CURDIR)/bin/blueprint $(BINDIR)/blueprint
 	@if [ "$(SKILLS)" = "1" ]; then $(BINDIR)/blueprint install-skills $(SKILL_FLAGS); fi
@@ -50,7 +47,7 @@ uninstall:
 	rm -f $(BINDIR)/blueprint
 	rm -rf $(DATADIR)
 
-test: submodules
+test:
 	$(PYTHON) -I tools/ears-lint/ears-lint.py --selftest
 	$(PYTHON) -I $(STE_SKILL)/scripts/ste-lint.py --selftest
 	$(PYTHON) -I bin/blueprint list > /dev/null
