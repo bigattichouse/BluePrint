@@ -74,6 +74,9 @@ The LLM is your professional engineering partner who:
 - Translates to code only when you issue `compile`
 - Writes documentation and code comments in [Simplified Technical English](https://en.wikipedia.org/wiki/Simplified_Technical_English) (ASD-STE100) for clear, unambiguous communication
 - Answers numeric design questions with simulation and parameter sweeps, not from memory, using the [robust](https://github.com/bigattichouse/robust) design-of-experiments tools (`morris`, `sobol`, `taguchi`)
+- Calculates first: each number comes from a measurement, a datasheet, a calculation in code, or a simulation. An unknown value gets a label and a range for the sweep
+- Tests a hardware design in a model before you build it, with one pass or fail result for each requirement
+- Simulates circuits in [ngspice](https://ngspice.sourceforge.io/) as tests that a script runs
 
 ## Your Role
 

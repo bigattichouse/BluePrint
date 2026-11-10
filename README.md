@@ -15,6 +15,12 @@ BluePrint is a set of prompt files and small tools. You can use the prompts with
 
 You need Python 3 and Git.
 
+Some prompts use more tools. Install them when you use those prompts:
+
+- [robust](https://github.com/bigattichouse/robust) for parameter sweeps (`morris`, `sobol`, `taguchi`). The model, experiments, and hardware prompts use it.
+- [ngspice](https://ngspice.sourceforge.io/) for circuit simulation. `blueprint-electronics.md` uses it, and `blueprint-model.md` uses it to cross-check a model.
+- [OpenSCAD](https://openscad.org/) for `blueprint-openscad.md`.
+
 ```sh
 git clone https://github.com/bigattichouse/BluePrint
 cd BluePrint
@@ -95,6 +101,8 @@ All prompts are in the `prompts/` directory.
 | `security-considerations.md`, `security-mini.md` | Add security requirements to a design |
 | `database-patterns.md` | Specify database schemas, queries, and migrations |
 
+The `guides/` directory has two reference guides that the hardware prompts use: `openscad.md` (OpenSCAD to fabrication) and `askelectronics.md` (how to use AI in electronics design). `make install` installs them, and `blueprint path guide-openscad` gives the path.
+
 ## How BluePrint Writes
 
 ### Simplified Technical English
@@ -123,11 +131,22 @@ The prompts recommend a `CHANGELOG.md` file in the [Keep a Changelog](https://ke
 
 When a design decision depends on numbers, the LLM makes a small model and sweeps its parameters. It does not answer from memory. A number from memory is a guess. A number from a sweep is evidence.
 
+The prompts give these rules:
+
+- **Calculate first.** Each number comes from a measurement, a datasheet, a calculation, or a simulation.
+- **Calculations are code.** Each calculation is a script or a test in the project, so it runs again when an input changes.
+- **Sweep the range.** The LLM checks a value across its tolerance and operating range, not only at the nominal value.
+- **An assumption is the last choice.** An unknown value gets a label and a range, and the sweep tests the range. The values that the sweep ranks highest become the measurement list for the bench. An assumption on a safety, fit, or power path stops the build.
+- **Test the design in the model before a build.** The model checks the design against the requirements, with one pass or fail result for each requirement. The LLM seeds a fault for each check to show that the check can fail.
+- **Simulate circuits in ngspice.** Each netlist is a test that a script runs at the corners (tolerance, supply, temperature) before you build. A heat or fluid network can also run in ngspice as a circuit, which gives an independent check of a model.
+
 For design of experiments, the prompts use the [robust](https://github.com/bigattichouse/robust) command-line tools:
 
 - `morris` finds which factors have an effect, and which factors interact.
 - `sobol` measures how much output variance each factor causes.
 - `taguchi` uses orthogonal arrays to find the best settings, and settings that noise does not change.
+
+The LLM reads the 95 % confidence interval of each result. A result with a wide interval is not a result yet.
 
 If the tools are not on your `PATH`, the LLM asks you for the location of your copy. If you do not have a copy, the LLM asks if it can clone and build one.
 

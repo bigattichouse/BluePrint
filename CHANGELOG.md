@@ -109,6 +109,9 @@ There is no released version yet. All changes are in the Unreleased section.
   `blueprint install` makes them skills. `make install` also installs
   `guides/`, which the two prompts refer to. Before this, neither prompt
   was a skill, and the guide references did not resolve.
+- README and `blueprint-readme.md`: the optional tools (robust, ngspice,
+  OpenSCAD), the `guides/` directory, and the calculate-first and
+  simulation rules.
 - Calculate first, in `blueprint-prompt.md`, `maker-blueprint.md`,
   `blueprint-openscad.md`, `blueprint-electronics.md`, and (short form)
   `blueprint-mini.md`. Each number comes from a measurement, a datasheet, a
