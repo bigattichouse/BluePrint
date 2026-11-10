@@ -127,6 +127,28 @@ depends on numbers (sizes, rates, tolerances, tradeoffs), make a small model
 and sweep its parameters. A number from memory is a guess. A number from a
 sweep is evidence.
 
+- **Calculate first.** Each number comes from a measurement, a datasheet, a
+  calculation, or a simulation. Memory is not a source. If you can calculate,
+  sweep, or simulate a value in minutes, do it. Do not write it as an
+  assumption.
+- **Calculations are code.** Put each calculation in a script or a test in the
+  project, with named inputs and units. Then it runs again when an input
+  changes. Arithmetic in a chat message is not a record.
+- **Sweep the range, not one point.** Check each design value across its
+  tolerance and its operating range (supply, temperature, part spread, room
+  conditions), not only at the nominal value.
+- **An assumption is the last choice.** Use one only when no calculation,
+  sweep, or simulation can give the value, for example before a part is
+  bought. Label it, and write the step that replaces it. An assumption on a
+  safety, fit, or power path stops the build until a calculation, a
+  simulation, or a measurement replaces it.
+- **Test the design in the model before a build.** Model the physics of
+  the design (heat flow, a circuit, a fit, a load). Then use the robust
+  tools to sweep the model over its parameters. The sweep shows which
+  designs work across the full range and which work at one point only.
+  Reject a design that the sweep shows to be unrealistic. Build only the
+  designs that pass in the model.
+
 For geometry, the model you sweep is the `.scad` file plus its render. For
 clearances, kerf, and process behavior, the sweep is a coupon printed or cut
 on the actual machine with the actual material. For design of experiments,
@@ -155,6 +177,10 @@ format:
   (`## [1.2.0] - 2026-10-14`). Use [Semantic Versioning](https://semver.org/).
 - Write for people. Do not copy the commit log.
 - Write each entry in Simplified Technical English.
+- Use each group heading one time in a section. Add a new entry under the
+  heading that is there.
+- After a merge, compare the entries with both parents. A merge must not
+  remove an entry.
 
 Record design decisions, specification changes, coupon results, and process
 calibrations, not only code changes.
@@ -783,6 +809,12 @@ A model produces two kinds of artifacts with different rules.
   fixed `$fn`, fixed output size. Record the exact command for every view
   (for example a `scripts/render.sh`), so a stale or drifting render is
   visible.
+- A render script writes into a temporary folder. It replaces the old
+  pictures only after it renders every view. A run that stops partway must
+  not remove the last good pictures.
+- Record the model state with the view answers: the date, the tool version,
+  and the model commit. When the model changes, the answers are stale until
+  you look at the views again.
 - Each view states the question it answers ("does the slot open to the bore?").
   Look at the image and record the answer. A cropped or unreadable view fails.
 - An exploded view is driven by a named `explode` parameter. It moves each part
@@ -884,6 +916,14 @@ correct scale can still be the wrong part.
   DEPRECATED warning.
 - **Run the checks as a script.** Keep them in the project (for example
   `cad/tests/check_cad.py`). A check that lives in a chat log does not run again.
+- **Trace each part to the specification.** Each part in the model (printed or
+  virtual) has an entry in the specification: a glossary term, a parameter, or
+  a ledger line. A part in the model with no entry fails. A model can gain a
+  feature that the specification does not describe, and every geometry check
+  still passes.
+- **Give each virtual part a clearance to the printed features near it.** A
+  bought part modeled flush against a rib or a wall has zero clearance. The
+  real part will not go in.
 
 ---
 

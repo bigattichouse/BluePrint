@@ -23,10 +23,11 @@ STE_SKILL := tools/asd-ste100-skill
 all: test
 
 install:
-	install -d $(BINDIR) $(DATADIR)/prompts $(DATADIR)/tools/ears-lint
+	install -d $(BINDIR) $(DATADIR)/prompts $(DATADIR)/guides $(DATADIR)/tools/ears-lint
 	install -m 0755 bin/blueprint $(BINDIR)/blueprint
 	install -m 0644 catalog.tsv README.md CHANGELOG.md LICENSE $(DATADIR)/
 	install -m 0644 prompts/*.md $(DATADIR)/prompts/
+	install -m 0644 guides/*.md $(DATADIR)/guides/
 	install -m 0755 tools/ears-lint/ears-lint.py $(DATADIR)/tools/ears-lint/
 	rm -rf $(DATADIR)/$(STE_SKILL)
 	mkdir -p $(DATADIR)/tools

@@ -56,6 +56,28 @@ depends on numbers (sizes, rates, tolerances, tradeoffs), make a small model
 and sweep its parameters. A number from memory is a guess. A number from a
 sweep is evidence.
 
+- **Calculate first.** Each number comes from a measurement, a datasheet, a
+  calculation, or a simulation. Memory is not a source. If you can calculate,
+  sweep, or simulate a value in minutes, do it. Do not write it as an
+  assumption.
+- **Calculations are code.** Put each calculation in a script or a test in the
+  project, with named inputs and units. Then it runs again when an input
+  changes. Arithmetic in a chat message is not a record.
+- **Sweep the range, not one point.** Check each design value across its
+  tolerance and its operating range (supply, temperature, part spread, room
+  conditions), not only at the nominal value.
+- **An assumption is the last choice.** Use one only when no calculation,
+  sweep, or simulation can give the value, for example before a part is
+  bought. Label it, and write the step that replaces it. An assumption on a
+  safety, fit, or power path stops the build until a calculation, a
+  simulation, or a measurement replaces it.
+- **Test the design in the model before a build.** Model the physics of
+  the design (heat flow, a circuit, a fit, a load). Then use the robust
+  tools to sweep the model over its parameters. The sweep shows which
+  designs work across the full range and which work at one point only.
+  Reject a design that the sweep shows to be unrealistic. Build only the
+  designs that pass in the model.
+
 For design of experiments, use the **robust** tools:
 <https://github.com/bigattichouse/robust>.
 
@@ -81,6 +103,10 @@ format:
   (`## [1.2.0] - 2026-10-14`). Use [Semantic Versioning](https://semver.org/).
 - Write for people. Do not copy the commit log.
 - Write each entry in Simplified Technical English.
+- Use each group heading one time in a section. Add a new entry under the
+  heading that is there.
+- After a merge, compare the entries with both parents. A merge must not
+  remove an entry.
 
 Record design decisions, specification changes, and model calibrations,
 not only code changes.

@@ -87,7 +87,60 @@ There is no released version yet. All changes are in the Unreleased section.
   push without write access to the upstream repository. `VENDORED.md`
   and the header of each changed file give the origin and the changes.
   `git clone` needs no `--recurse-submodules`.
-
+- Hardware prompts, from building a yogurt maker with them (dogfood, 22
+  flaws). `blueprint-openscad.md`: every named clearance states its intent;
+  virtual (bought) parts in assemblies, never exported; an explicit export
+  list; reproducible renders that each answer a stated question; a compile
+  gate; the assembly sequence as one data list that the collision sweeps,
+  the exploded view, and the step pictures read; geometry checks on solids,
+  run as a script, with probes sized from the mating part and one seeded
+  fault per kind of check; OpenSCAD 2021.01 behavior to test. Examples are
+  generic.
+- `blueprint-electronics.md`: a part ledger with source, revision, fetch
+  date, and status; each safety layer has a location; datasheet limits go to
+  the mechanical design; size a heating element at the supply voltage,
+  estimate the stuck-on rise, and check the layer list again when the
+  element changes.
+- `blueprint-prompt.md`: compile entry conditions, no requirement changed to
+  match a model without a human decision, and a brief trace so a brief item
+  cannot disappear.
+- `blueprint-openscad.md` and `blueprint-electronics.md` are in
+  `catalog.tsv` and the README. `blueprint list` shows them, and
+  `blueprint install` makes them skills. `make install` also installs
+  `guides/`, which the two prompts refer to. Before this, neither prompt
+  was a skill, and the guide references did not resolve.
+- Calculate first, in `blueprint-prompt.md`, `maker-blueprint.md`,
+  `blueprint-openscad.md`, `blueprint-electronics.md`, and (short form)
+  `blueprint-mini.md`. Each number comes from a measurement, a datasheet, a
+  calculation, or a simulation. Calculations are code. Sweep the range, not
+  one point. An assumption is the last choice, and an assumption on a
+  safety, fit, or power path stops the build. Test the design in the model
+  with a robust sweep before a build. From the yogurt-maker dogfood, flaws
+  23 to 41.
+- `blueprint-electronics.md`: ngspice is the simulator, run in batch mode as
+  a scripted test at the corners, before the user builds. Help ngspice find
+  the operating point with `.nodeset` from a fixed rule. A safety layer on a
+  candidate part counts as planned, not closed. Check the low side of a heater (too
+  weak is a hazard too). Find which limit acts when two parts limit the
+  same temperature.
+- `blueprint-model.md`: Phase 0 asks for hazards (both directions) and
+  separates scenarios from factors. An unsourced constant becomes a labeled
+  assumption with a range. The sweep tests the range, and the ranking becomes
+  the measurement list. New sections: a transient pattern with discrete
+  control, phases, and an independent cross-check (a heat network as an
+  ngspice circuit). Also one pass flag for each requirement with a seeded
+  fault, and an in-process sweep driver. Read the confidence intervals (also in
+  `blueprint-experiments.md`).
+- `blueprint-experiments.md`: the robust tools read one bare number from
+  stdout, not JSON.
+- `blueprint-openscad.md`: a render script replaces the pictures only after
+  it renders every view. The evidence records the date, tool version, and
+  model commit. Each model part traces to a specification entry. Each virtual
+  part has a clearance to nearby printed features.
+- Changelog rules in the prompts: use each group heading one time, and after
+  a merge compare the entries with both parents.
+- `blueprint-specification.md`: if `ste-lint` rejects `--blueprint-spec`,
+  run `make install` again.
 - The README is in Simplified Technical English. It lists all prompt files.
 - The main prompt is a dialectic process: one question at a time, then a
   section-by-section review with derived tests (2025-12-14).

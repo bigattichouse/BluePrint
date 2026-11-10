@@ -97,6 +97,12 @@ also writes a `.tgu` file for the bench.
 Morris and Sobol belong on the simulator, where a run costs milliseconds.
 Taguchi belongs on the bench, where a run costs hours and real noise exists.
 
+**Read the confidence intervals.** Each index has a 95 % interval. An index
+whose interval crosses zero, or is wider than the index, is not a result.
+Run `morris converge` or `sobol converge` with `--target-ci` to add runs.
+When a model switches (a thermostat, a limit), the first-order Sobol index
+converges slowly. Read the total index first.
+
 **How the tools run the model.** Each tool sets the factor values as
 environment variables with its own prefix (`MORRIS_x`, `SOBOL_x`,
 `TAGUCHI_x`, `OFAT_x`, `GRID_x`). Then it runs your model command. Write one
@@ -241,6 +247,13 @@ def main():
     }
     print(json.dumps(result))
 ```
+
+The robust tools (`morris run`, `sobol run`, `taguchi run`) read one bare
+number from stdout, not JSON (see `examples/cookies/model.sh` in robust).
+Print one number for the tool, and add a flag (for example `--all`) that
+prints every metric for a results CSV. For a fast model, a driver that runs
+the design CSV in the process is simpler (see blueprint-model.md, "Run a
+sweep design in the process").
 
 ### 2.4 — Analysis Script
 

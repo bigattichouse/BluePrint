@@ -85,6 +85,8 @@ All prompts are in the `prompts/` directory.
 | `blueprint-mini.md` | Design software with a small or local LLM |
 | `blueprint-specification.md` | Write requirements and tests in STE, with EARS patterns and `Expect` clauses |
 | `maker-blueprint.md` | Design physical objects, experiments, and hardware |
+| `blueprint-openscad.md` | Design parts in OpenSCAD for 3D printing, laser cutting, and CNC, and check them as solids |
+| `blueprint-electronics.md` | Design electronics, simulate them in ngspice, and measure them on the bench |
 | `blueprint-model.md` | Make a mathematical model of a physical system |
 | `blueprint-experiments.md` | Explore the design space of a model and test it with hardware |
 | `blueprint-experiment-worksheet.md` | Make printable bench worksheets that compare measurements to model predictions |

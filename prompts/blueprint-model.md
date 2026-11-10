@@ -98,6 +98,12 @@ also writes a `.tgu` file for the bench.
 Morris and Sobol belong on the simulator, where a run costs milliseconds.
 Taguchi belongs on the bench, where a run costs hours and real noise exists.
 
+**Read the confidence intervals.** Each index has a 95 % interval. An index
+whose interval crosses zero, or is wider than the index, is not a result.
+Run `morris converge` or `sobol converge` with `--target-ci` to add runs.
+When a model switches (a thermostat, a limit), the first-order Sobol index
+converges slowly. Read the total index first.
+
 **How the tools run the model.** Each tool sets the factor values as
 environment variables with its own prefix (`MORRIS_x`, `SOBOL_x`,
 `TAGUCHI_x`, `OFAT_x`, `GRID_x`). Then it runs your model command. Write one
@@ -161,6 +167,19 @@ but don't ask one at a time either. Read the room.
 7. "What hardware do you have or plan to build? What instruments?"
    *This shapes which configurations we model, what experiments we can
    run, and what precision to expect in measurements.*
+
+8. "What must never happen?"
+   *List the hazards: too hot, too cold, too long, a failed part. Each
+   hazard gets a limit with a source and a requirement. Write the
+   requirements before the model. The model checks the design against the
+   limits. It does not set them. Look in both directions: a heater that is
+   too weak can be as dangerous as one that is too hot.*
+
+9. "Which inputs are your choices, and which are unknowns?"
+   *A process choice (for example the start temperature of a load) or a
+   fault state (a stuck switch) is a scenario. Run each scenario on its
+   own. An unknown value (a part not bought yet, a contact that is not
+   measured) is a factor with a range. Sweep the factors.*
 
 **After gathering answers, produce:**
 - `design/README.md` — problem summary, design questions, source list
@@ -506,8 +525,16 @@ CONSTANT_NAME = 1.234e-3
 ANOTHER_CONSTANT = 5.678
 ```
 
-**Rule: every constant must have a source.** If I can't find a source,
-I stop and ask you. No guessing, no "approximately", no "typical value."
+**Rule: every constant must have a source.** Search for one first.
+Sometimes no source can exist yet: the part is not bought, or the contact
+is not measured. Then label the value ASSUMPTION, write how you got it, and
+give it a range. The
+sweep then tests the range. Do not stop the model for a value that a sweep
+can cover. Stop and ask only when the value is a user decision. No silent
+guessing, no "approximately", no "typical value" without a range.
+
+After the screening sweep, rank the assumptions by their effect. The top of
+that list is the measurement list for the bench.
 
 ---
 
@@ -592,6 +619,39 @@ def solve_steady_state(config, max_iter=5000, tol=0.01):
 
     return SystemState(..., converged=False, iterations=max_iter)
 ```
+
+### Transient Pattern (Discrete Control)
+
+A safety question often needs a time history, not a steady state: the
+peak, the time to a temperature, or the time in a band. A thermostat, a
+relay, or a timer switches the inputs. Use a fixed-step transient for these:
+
+- Keep the switch state (on or off, with hysteresis) as part of the state.
+- Choose the step from the shortest time constant (C / G). An explicit step
+  must be less than that time constant.
+- Test that half the step gives the same metrics within a stated tolerance.
+- Test the energy balance: energy in = energy stored + energy lost.
+- Test that a long run with fixed inputs reaches the linear steady state.
+- Model each fault as a scenario: switch stuck closed, switch stuck open.
+
+### Phases
+
+A real use often changes the system during a run. A device preheats empty,
+then the user puts the load in. Model the run as a list of phases. Each
+phase sets its topology (which nodes exist) and its end condition (a time,
+a temperature, or a switch event). The end state of one phase is the start
+state of the next. Do not keep a load in from the start when the real use
+adds it later. The result is then wrong, and you cannot see which way.
+
+### Independent Cross-Check
+
+A model checked only by its own code can hide a sign error. Solve the same
+network with an independent tool. A heat or fluid network maps onto a
+circuit: temperature is voltage, heat flow is current, 1/G is a resistor,
+heat capacity is a capacitor. Run it in ngspice (`ngspice -b`) and compare
+the node values within a stated tolerance. A nonlinear source (for example
+a PTC with an exponential curve) can stop the ngspice operating point. Give
+`.nodeset` a start point from a fixed rule, not from the answer under test.
 
 ### Integration Tests
 
@@ -699,6 +759,18 @@ The model is "done" when:
 - [ ] Visualization tools produce valid SVG/HTML/JSON output
 - [ ] Validation against known results shows acceptable accuracy
 - [ ] All design questions from Phase 0 can be addressed
+
+**Report each requirement as pass or fail.** For each run, the model
+prints one pass flag for each requirement limit. Seed one fault for each
+requirement and check that its flag goes to fail. A flag that cannot fail
+is blind.
+
+**Run a sweep design in the process.** `morris sample` and `sobol sample`
+write a design CSV. A small driver runs the model once for each row and
+writes a results CSV: `run_id`, then one column for each metric and flag.
+`morris analyze` and `sobol analyze` read it with `--metric NAME`. The
+`run` subcommands also print progress lines on stdout, so do not use their
+stdout as a results file.
 
 **Next step:** Transition to **blueprint-experiments.md** for design space
 exploration, Taguchi screening, parameter sweeps, hardware validation

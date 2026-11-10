@@ -131,14 +131,42 @@ depends on numbers (sizes, rates, tolerances, tradeoffs), make a small model
 and sweep its parameters. A number from memory is a guess. A number from a
 sweep is evidence.
 
-In electronics, the model is a SPICE netlist. Simulate the DC operating
-point, load regulation, startup, and the thermal case before you trust a
-value. Use LTspice, ngspice, or Falstad where practical. Firmware is a model
-too: the control logic (state machines, setpoint math, display formatting,
-hysteresis) must be tested as code on the host — unit tests and state-machine
-tests — before any hardware exists. A firmware bug found in a test costs
-seconds. The same bug found at the bench costs a night of rework. For design of
-experiments, use the **robust** tools:
+- **Calculate first.** Each number comes from a measurement, a datasheet, a
+  calculation, or a simulation. Memory is not a source. If you can calculate,
+  sweep, or simulate a value in minutes, do it. Do not write it as an
+  assumption.
+- **Calculations are code.** Put each calculation in a script or a test in the
+  project, with named inputs and units. Then it runs again when an input
+  changes. Arithmetic in a chat message is not a record.
+- **Sweep the range, not one point.** Check each design value across its
+  tolerance and its operating range (supply, temperature, part spread, room
+  conditions), not only at the nominal value.
+- **An assumption is the last choice.** Use one only when no calculation,
+  sweep, or simulation can give the value, for example before a part is
+  bought. Label it, and write the step that replaces it. An assumption on a
+  safety, fit, or power path stops the build until a calculation, a
+  simulation, or a measurement replaces it.
+- **Test the design in the model before a build.** Model the physics of
+  the design (heat flow, a circuit, a fit, a load). Then use the robust
+  tools to sweep the model over its parameters. The sweep shows which
+  designs work across the full range and which work at one point only.
+  Reject a design that the sweep shows to be unrealistic. Build only the
+  designs that pass in the model.
+
+In electronics, the model is a SPICE netlist, and **ngspice** is the
+simulator. It runs in batch mode (`ngspice -b`), so a script can run each
+netlist as a test, and the robust tools can sweep it. Simulate before the
+user builds: the user does not buy parts, solder, or apply power until the
+simulation passes. LTspice or Falstad can give a quick look. The record is
+the ngspice run that a script repeats.
+
+Simulate the DC operating point, load regulation, startup, and the thermal
+case before you trust a value. Firmware is a model too: the control logic
+(state machines, setpoint math, display formatting, hysteresis) must be
+tested as code on the host — unit tests and state-machine tests — before any
+hardware exists. A firmware bug found in a test costs seconds. The same bug
+found at the bench costs a night of rework. For design of experiments, use
+the **robust** tools:
 <https://github.com/bigattichouse/robust>.
 
 - `morris` finds which factors have an effect, and which interact.
@@ -163,6 +191,10 @@ format:
   (`## [1.2.0] - 2026-10-14`). Use [Semantic Versioning](https://semver.org/).
 - Write for people. Do not copy the commit log.
 - Write each entry in Simplified Technical English.
+- Use each group heading one time in a section. Add a new entry under the
+  heading that is there.
+- After a merge, compare the entries with both parents. A merge must not
+  remove an entry.
 
 Record design decisions, specification changes, simulation results, and
 measured corrections, not only code changes.
@@ -597,6 +629,21 @@ Rules:
 - **When the element changes, check the layer list again.** A fixed-resistance
   element (carbon fiber, nichrome) does not self-regulate. A change from a PTC
   element removes a layer. Add a replacement layer, or record the human decision.
+- **A layer counts only after you select its part and measure its limit.**
+  A candidate part is a planned layer. Do not close an open safety item on a
+  planned layer. Keep the item open until the part is in the ledger and you
+  measure its limit (for example the self-regulation temperature of a PTC
+  element).
+- **Check the low side too.** When the load is food, a living thing, or a
+  process with a minimum temperature, a heater that is too weak is a hazard.
+  A load that stays too cool for too long can spoil or fail. The part with
+  the lowest temperature is not automatically the safe part. Calculate the
+  hold power at the coldest ambient temperature.
+- **Find which limit acts.** When two parts limit the same temperature (for
+  example a self-limiting PTC and a thermostat), find which one acts at each
+  corner of the sweep. If the PTC holds the temperature below the thermostat
+  setting, the thermostat never opens. Then a signal that the thermostat
+  drives (a ready beep, an alarm that it arms) never comes.
 - **Each protection and sensor has a physical location.** State where it mounts,
   what it measures, and its normal temperature there. A fuse rated near the
   element's own temperature must not touch the element in normal use.
@@ -798,6 +845,16 @@ The classic "forgot to include" list. Check every design against it:
 ### 9.7 Simulation
 - **Simulate what matters.** DC operating point, load regulation, startup,
   thermal, timing on the critical nets.
+- **Simulations are tests.** Keep each netlist in `simulation/`. A script
+  runs ngspice in batch mode and compares the `.meas` results with the
+  limits from the specification. The script exits with a failure code when a
+  result is out of limits. Run it with the code tests, after every change.
+- **Help ngspice find the operating point.** An exponential or a `max()`
+  term in a B source can stop the `.op` solution ("timestep too small").
+  Give `.nodeset` values from a fixed rule (for example the part reference
+  temperature). Do not use the answer under test as the start point.
+- **Simulate the corners.** Run each netlist at the part tolerances, the
+  supply range, and the temperature range. One nominal run is not a check.
 - **Simulation is a check, not a substitute.** It catches many errors that
   look fine on paper, but the bench measurement is the verdict.
 
@@ -1040,8 +1097,10 @@ measurement log linked together. Use clear names such as
 [ ] Each sensor and protection has a physical location and normal temperature
 [ ] Heating element sized at the supply voltage; stuck-on rise estimated;
     the layer list checked again after any element change
+[ ] A safety layer on a candidate part is "planned", not closed
 [ ] Contact method and temperature limits handed to the mechanical design
 [ ] ERC clean; DRC clean (for layouts); simulation done where it matters
+[ ] ngspice tests pass at the corners, from a script, before the user builds
 [ ] Prototype powered from a current-limited supply
 [ ] Measurement log: expected vs measured, pass/fail, instrument named
 [ ] Revision recorded; the AI-proposed vs human-changed delta noted

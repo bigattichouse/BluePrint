@@ -49,6 +49,13 @@ depends on numbers (sizes, rates, tolerances, tradeoffs), make a small model
 and sweep its parameters. A number from memory is a guess. A number from a
 sweep is evidence.
 
+- Calculate first. Each number comes from a measurement, a datasheet, a
+  calculation, or a simulation. Memory is not a source.
+- Put each calculation in a script or a test, so it runs again.
+- Sweep the range (tolerance, supply, temperature), not one point.
+- An assumption is the last choice. Label it, give it a range, and sweep it.
+- Test the design in the model before a build. Build only what passes.
+
 For design of experiments, use the **robust** tools:
 <https://github.com/bigattichouse/robust>.
 

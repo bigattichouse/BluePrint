@@ -10,11 +10,15 @@ prompt	blueprint-experiments	prompts/blueprint-experiments.md	blueprint-experime
 prompt	blueprint-experiment-worksheet	prompts/blueprint-experiment-worksheet.md	blueprint-experiment-worksheet	Make printable bench worksheets that show model predictions, blanks for measurements, and what each result means.
 prompt	blueprint-observational	prompts/blueprint-observational.md	blueprint-observational	Make a model from data that already exists, with identifiability checks, backtests, pre-registered forecasts, and drift tracking.
 prompt	maker-blueprint	prompts/maker-blueprint.md	blueprint-maker	Design physical objects, materials, processes, and test plans in Maker BluePrint notation.
+prompt	blueprint-openscad	prompts/blueprint-openscad.md	blueprint-openscad	Design parts in OpenSCAD for 3D printing, laser cutting, and CNC, with fit coupons, geometry checks as a script, renders, and a fabrication handoff.
+prompt	blueprint-electronics	prompts/blueprint-electronics.md	blueprint-electronics	Design electronics with a part ledger, safety layers, ngspice simulations as tests, ERC and DRC, and bench measurements before a build.
 prompt	blueprint-prompt-debug	prompts/blueprint-prompt-debug.md	blueprint-debug	The `debug` command: step through code with given inputs and show variable states, data structures, and edge cases.
 reference	blueprint-function-calls	prompts/blueprint-function-calls.md	blueprint-function-calls	Function-call interface that lets an LLM run, trace, and visualize code from a BluePrint specification during debugging.
 reference	database-patterns	prompts/database-patterns.md	blueprint-database-patterns	Patterns for database schemas, relationships, transactions, migrations, and queries in BluePrint notation.
 reference	security-considerations	prompts/security-considerations.md	blueprint-security	Full security reference for internet-facing applications: application, data, identity, infrastructure, privacy, and incident response.
 reference	security-mini	prompts/security-mini.md	blueprint-security-mini	Short security checklist for internet-facing applications in BluePrint notation.
+reference	guide-openscad	guides/openscad.md	-	Training guide from OpenSCAD to fabrication: drafting, fit testing, 3D printing, laser cutting, and CNC.
+reference	guide-askelectronics	guides/askelectronics.md	-	Guide from r/AskElectronics on how to use AI in electronics design and check what it gives you.
 reference	blueprint-readme	prompts/blueprint-readme.md	-	Short overview of BluePrint, its commands, and the roles of the user and the LLM.
 tool	ste-lint	tools/asd-ste100-skill/scripts/ste-lint.py	-	Linter for the structural rules of Simplified Technical English (ASD-STE100); run it with `python3 -I`.
 tool	ears-lint	tools/ears-lint/ears-lint.py	-	Linter for EARS requirements and Verify/Expect blocks in the blueprint-specification format; run it with `python3 -I`.

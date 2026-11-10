@@ -318,6 +318,10 @@ specification file:
 python3 -I "$(blueprint path ste-lint)" --blueprint-spec spec/requirements.md
 ```
 
+If `ste-lint` says that `--blueprint-spec` is not a known option, the
+installed copy is older than the BluePrint repository. Run `make install`
+in the BluePrint directory again, then check with `ste-lint --help`.
+
 ```sh
 python3 -I "$(blueprint path ste-lint)" FILE.md          # text report
 python3 -I "$(blueprint path ste-lint)" --json FILE.md   # JSON report
