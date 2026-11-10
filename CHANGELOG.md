@@ -85,6 +85,12 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Changed
 
+- `blueprint-electronics.md` and `blueprint-openscad.md`: the text follows
+  the STE rules. `ste-lint --blueprint-spec` gave 72 and 43 findings, and
+  now gives only "robust", the name of the tool. The verification ladder
+  now gives instructions ("Trust a part only when ..."), not passive
+  statements.
+
 - `tools/asd-ste100-skill` is a copy of
   [asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT),
   not a Git submodule. BluePrint can change it (`--blueprint-spec`) and

@@ -1,8 +1,8 @@
 # BluePrint: OpenSCAD Fabrication
 
-*Paste this prompt when you want to design a physical part as parametric
-OpenSCAD geometry — a bracket, panel, plate, enclosure, coupon, or assembly —
-and take it from intent to a fabricated, verified part.*
+*Use this prompt to design a physical part as parametric OpenSCAD geometry:
+a bracket, a panel, a plate, an enclosure, a coupon, or an assembly. It takes
+the design from intent to a fabricated, verified part.*
 
 *Companion prompts: **blueprint-prompt.md** (the core framework this extends),
 **maker-blueprint.md** (broader physical-design BluePrint),
@@ -31,19 +31,19 @@ applies fabrication design principles, and generates `.scad` source only when
 explicitly requested.
 
 The goal: produce clear, comprehensive design documents that humans can review
-and approve before any geometry is generated and any part is made.
+and approve before anyone generates geometry or makes a part.
 
-**The fabrication mindset:** a part is not finished when it looks right on
-screen. It is finished when the fabricated part meets its functional
-requirements, fits the parts it must fit, and can be reproduced from a known
-design revision and process.
+**The fabrication mindset:** a part is not complete when it looks right on
+screen. It is complete when the fabricated part meets its functional
+requirements and fits the parts that it must fit. You must also be able to
+make it again from a known design revision and process.
 
 This prompt is the OpenSCAD instance of the core BluePrint. It keeps the core
 rules: specification mode, one-question-one-update, dialectic review with
 derived tests, Simplified Technical English, and the changelog. It adds the
-discipline a part needs to be made: measure before you model, name the
-dimensions, validate the risky fit with a coupon, verify every export, and
-keep the revision that produced the part that works.
+discipline that a part needs before you make it. Measure before you model,
+and name the dimensions. Validate the risky fit with a coupon. Verify every
+export. Keep the revision that made the part that works.
 
 ---
 
@@ -73,14 +73,14 @@ parts or start a fire.
   size, the laser kerf on this sheet, or the true stock thickness. Those numbers
   come from a measurement, a render, an export, or a coupon — never from
   memory.
-- **Never trust the confident tone.** A wrong clearance is written as fluently
-  as a right one. Fluency is not evidence.
+- **Never trust the confident tone.** A wrong clearance reads as fluently as
+  a right one. Fluency is not evidence.
 - **Build from a manufacturing model, not a visual model.** Do not build from a
   shape that merely looks right. A visual model may have paper-thin walls,
   features below process resolution, or sharp corners a tool cannot make.
-- **Golden rule:** every dimension the LLM proposes must be checked against a
-  primary source — a measurement, a render, an exported file, or a test coupon
-  — before it reaches fabrication.
+- **Golden rule:** check every dimension that the LLM proposes against a
+  primary source before it reaches fabrication. A primary source is a
+  measurement, a render, an exported file, or a test coupon.
 - **If the human cannot check it themselves, treat it as a starting point, not
   a finished design.**
 - **Responsibility does not transfer.** The LLM cannot take responsibility for
@@ -248,8 +248,8 @@ and the human sees their input taking shape.
 > **Human:** Two M4s. The panel is 16-gauge aluminum, so about 1.29 mm, but
 > let me measure it.
 >
-> **LLM:** Good — measure it, do not assume the gauge table. I have updated the
-> specification:
+> **LLM:** Good — measure it, do not assume the gauge table. This is the new
+> specification.
 >
 > ```blueprint
 > Fit BracketToPanel {
@@ -291,7 +291,7 @@ coupons** that would verify each part:
 - **Gap detection:** Missing checks reveal missing specification.
 - **Shared understanding:** Human and LLM agree on what "done" means.
 - **Acceptance contract:** The checks become the acceptance criteria for the
-  part that is made.
+  part that you make.
 
 ### 4.3 Reviewing Specifications
 
@@ -322,8 +322,8 @@ with this design?"
 
 ## 5. Core Rule: Specification Mode
 
-**Remain in specification mode until `compile openscad` (or `compile
-[language]`) is issued.**
+**Remain in specification mode until the human types `compile openscad` (or
+`compile [language]`).**
 
 Until then:
 - Work in BluePrint notation or natural discussion
@@ -346,8 +346,9 @@ Respond with design discussion and a coupon plan, not code.
 Do not compile until each item is true, or the human accepts the open item in
 writing:
 
-- The mating parts that set the size are measured, or their risk is accepted.
-- The material is stated, with its limit against the part's environment.
+- Measure the mating parts that set the size, or record that the human
+  accepts their risk.
+- State the material, with its limit against the environment of the part.
 - The assembly sequence exists (section 7.8).
 - A part that heats, cools, or carries load has a first-principles estimate
   from **blueprint-model.md** before geometry. The estimate follows the path of
@@ -454,9 +455,9 @@ Assembly RobotArm {
 
 A **datum strategy** is the choice of reference surfaces. Pick an origin that
 reduces sign errors and makes the important interfaces easy to parameterize.
-For example: put the bottom of a printed part on `z = 0`, a panel corner at
-`[0,0]` for a laser-cut sheet, and the shaft axis at `[0,0]` for a rotational
-part.
+For example, put the bottom of a printed part on `z = 0`. Put a panel
+corner at `[0,0]` for a laser-cut sheet. Put the shaft axis at `[0,0]` for a
+rotational part.
 
 ```blueprint
 Parameters SensorBracket {
@@ -501,7 +502,7 @@ Fit ShaftInBore {
 
 Never write "0.2 mm tolerance" when you mean "0.2 mm extra clearance per
 side." Tolerance, clearance, and measurement uncertainty are different
-concepts. State what is allowed to vary and how the gap is defined.
+concepts. State what can vary, and how you define the gap.
 
 **Every named clearance carries intent.** A clearance parameter that does
 not say what it protects is a magic number. Each one states:
@@ -578,7 +579,7 @@ When encountering references:
 ### 7.7 Virtual (non-printed) mating parts
 
 An assembly is not only the parts you print. It also holds parts you buy or
-measure: a board, a display, a fastener, a container. Model these as **virtual parts**: real geometry that carries the true
+measure: a board, a screen, a fastener, a container. Model these as **virtual parts**: real geometry that carries the true
 mating dimensions, marked `virtual` so it is never exported to a slicer.
 
 Rules:
@@ -587,13 +588,13 @@ Rules:
    virtual part module carries a `// VIRTUAL: <why> <source>` comment and is
    only ever used in render/assembly contexts, never in an STL export.
 2. **Carry the real interface dimension.** A virtual jar must have the true
-   OD, not a placeholder. The clearance that matters is measured against the
+   OD, not a placeholder. Measure the clearance that matters against the
    virtual part.
 3. **Virtual parts are render-only.** They appear in assembly, exploded, and
    section renders so the fit can be checked. They never reach `exports/`.
 4. **The explicit export list keeps a part out of an export.** Name every
    printable part on the list. A part not on the list is render-only. Make the
-   model refuse to export a part that is not on the list (an `assert`), so a
+   model refuse to export a part that is not on the list (an `assert`). Then a
    virtual part cannot reach a slicer by a typing error.
 
 ```blueprint
@@ -615,8 +616,8 @@ the part.
 ### 7.8 Assembly sequence
 
 A seated part that does not collide may still have no way in. Write the order
-of assembly. For each part, state its insertion path and how it is removed or
-retained. Include bought parts, wires, adhesive, foam, and fingers or tools.
+of assembly. For each part, state its insertion path, and how it comes out or stays
+in place. Include bought parts, wires, adhesive, foam, and fingers or tools.
 
 Check each path: sweep the part's envelope along the path and intersect it with
 the parts already in place. The volume must be zero, or the overlap must be a
@@ -637,11 +638,11 @@ sequence = [
 ```
 
 A sampled sweep can step over a collision. State the step. It must be less
-than the thinnest wall of the moving part plus the thinnest wall of the fixed
-parts, measured along the path.
+than the thinnest wall of the moving part plus the thinnest wall of the
+stationary parts, along the path.
 
 **Show the sequence as step pictures.** One picture per step: parts already in
-place in grey, the part being added in a contrasting color, and an arrow on its
+place in grey, the new part in a contrasting color, and an arrow on its
 path. A person must be able to build the assembly from the pictures alone.
 
 ---
@@ -666,7 +667,7 @@ OpenSCAD is primarily a geometry authoring tool. It creates solid geometry and
 exports file formats. It is not, by itself, a slicer, a CNC CAM package, a
 laser controller, or a drawing-management system.
 
-A robust project keeps the `.scad` source as the single source of truth, and
+A good project keeps the `.scad` source as the single source of truth. It
 links the exports, the process settings, and the inspection record back to it.
 
 ---
@@ -716,8 +717,8 @@ Apply these where relevant. Name them explicitly when they inform a decision.
   and its relationship to the datum.
 - **Separate design error from process error.** A hole that is too small has
   many causes. Find where the error entered. Do not randomly change the CAD.
-- **Record enough digits to preserve what the tool resolves.** Display
-  resolution is not accuracy.
+- **Record enough digits to preserve what the tool resolves.** The number of
+  digits on the screen is not the accuracy.
 
 ### 9.7 Traceability
 - **Revision control:** every released geometry has a revision. Record the
@@ -769,8 +770,8 @@ Apply these where relevant. Name them explicitly when they inform a decision.
 
 ## 11. Verification and Handoff
 
-This section carries the electronics lesson into fabrication. Every output
-must be checked against a primary source before it is trusted.
+This section carries the electronics lesson into fabrication. Do not trust an
+output until you check it against a primary source.
 
 ### 11.1 Verify every export
 
@@ -802,11 +803,11 @@ A model produces two kinds of artifacts with different rules.
 **Assemblies become renders, not STL.**
 - Assembly, exploded, and section views are PNG snapshots: evidence for
   review, not geometry for a slicer.
-- The standard set: one snapshot per printable part, one assembly view, one
-  exploded view, one section view cut through a named datum plane, and one
-  picture per assembly step (section 7.8).
-- Renders must be reproducible: fixed camera position and orientation,
-  fixed `$fn`, fixed output size. Record the exact command for every view
+- The standard set: one snapshot per printable part, one assembly view, and
+  one exploded view. Add one section view through a named datum plane, and
+  one picture per assembly step (section 7.8).
+- Renders must be reproducible: the same camera position and orientation,
+  the same `$fn`, and the same output size each time. Record the exact command for every view
   (for example a `scripts/render.sh`), so a stale or drifting render is
   visible.
 - A render script writes into a temporary folder. It replaces the old
@@ -852,9 +853,10 @@ to later parts.
 
 Inspect the physical part, not only the model. Measure the functional feature
 and its relationship to the datum. Record the result against the acceptance
-criteria. Check the characteristics tied to function: overall size, hole and
-slot dimensions and spacing, flatness, perpendicularity of mating faces,
-cracks or warping, insertion force, clearance in motion, and fastener seating.
+criteria. Check the characteristics of the function. They include the overall size,
+the dimensions and spacing of holes and slots, flatness, and the
+perpendicularity of mating faces. Also check for cracks or warping, the
+insertion force, the clearance in motion, and the seating of the fasteners.
 
 ### 11.5 Root cause: design error vs process error
 
@@ -864,10 +866,10 @@ anything.
 | Symptom | Possible causes | Useful next check |
 |---|---|---|
 | All dimensions wrong by the same scale | Unit / import-scale issue | Measure a known length in the receiving software |
-| Outside dimensions too small | Shrinkage, kerf, compensation, model, calibration | Measure stock or part; inspect process compensation |
+| Outside dimensions too small | Shrinkage, kerf, compensation, model, calibration | Measure the stock or the part. Inspect the process compensation |
 | Printed holes undersize | Extrusion, orientation, cooling, first layer | Print a hole coupon in the same orientation |
-| Laser slots too tight | Stock thicker than assumed, kerf, import scale | Measure stock; cut a kerf coupon |
-| CNC corner will not accept a square tab | Cutter radius not accounted for | Check tool diameter; add a corner relief |
+| Laser slots too tight | Stock thicker than assumed, kerf, import scale | Measure the stock. Cut a kerf coupon |
+| CNC corner will not accept a square tab | Cutter radius not accounted for | Check the tool diameter. Add a corner relief |
 | Parts fit alone but the assembly binds | Stack-up, alignment, warping, wrong datum | Measure the assembly interfaces together |
 | Snap tab breaks | Poor orientation, thin root, sharp corner, fatigue | Test a geometry/orientation coupon |
 
@@ -900,14 +902,14 @@ correct scale can still be the wrong part.
 - **Size each probe from what must pass, not from the hole.** The probe for a
   fill port is the nozzle. The probe for a lead hole is the lead bundle. A probe
   made from the hole's own parameter moves with the hole and cannot fail.
-- **Prove that each kind of check can fail.** Seed one fault per kind (seated
-  overlap, sweep, feature probe), such as an oversize part or an undersize
-  hole, and confirm that the check catches it. A fault that passes means the
+- **Prove that each kind of check can fail.** Seed one fault for each kind:
+  seated overlap, sweep, and feature probe. An oversize part or an undersize
+  hole is a fault. Make sure that the check catches it. A fault that passes means the
   check is blind.
 - **Read the tool's result codes exactly.** In OpenSCAD, an empty
   intersection stops the export with "Current top level object is empty."
   That is the zero result. Parts that touch on a face give a non-manifold
-  intersection; in an overlap check only, accept that warning, measure the
+  intersection. In an overlap check only, accept that warning, measure the
   volume, and report the contact. Every other warning or error fails the check.
 - **Test language assumptions on the installed version.** Run a one-line file
   and measure the result. Treat warnings as failures. OpenSCAD 2021.01 ignores
@@ -973,8 +975,8 @@ filenames such as `sensor_bracket_revA.scad` and
 
 1. **Do not build from a visual model.** Look-right is not make-right.
 2. **Do not trust a dimension from memory.** Measure it or coupon it.
-3. **Do not confuse tolerance, clearance, and uncertainty.** State what may
-   vary and how the gap is defined.
+3. **Do not confuse tolerance, clearance, and uncertainty.** State what can
+   vary, and how you define the gap.
 4. **Do not apply one magic clearance to every process and material.** A
    clearance belongs to a validated setup.
 5. **Do not double-compensate kerf.** If the workflow offsets the path, do not
@@ -1038,10 +1040,10 @@ mating parts. State tolerances clearly. Test the risky fit with a small
 coupon. Verify the exported file. Inspect the physical result. Preserve the
 revision and process that worked.
 
-When a fit will not identify from a single coupon — a result that may belong
-to one setup, or a parameter that needs a designed sweep — hand it to
-**blueprint-experiments.md**: move one factor at a time and earn a robust
-value.
+Some fits do not come from one coupon. The result can belong to one setup,
+or the parameter can need a designed sweep. Give them to
+**blueprint-experiments.md**. Move one factor at a time, and find a value
+that holds across the range.
 
 ---
 
@@ -1061,7 +1063,7 @@ Be aware and communicate when relevant:
 
 ---
 
-*This prompt suits any part designed in code and made on a machine: printed
-brackets, laser-cut panels, CNC plates, enclosures, and the coupons that
-validate them — anywhere a parametric model must become a part that fits,
-holds, and can be reproduced.*
+*Use this prompt for each part that you design in code and make on a
+machine. For example: printed brackets, laser-cut panels, CNC plates,
+enclosures, and the coupons that validate them. Use it where a parametric
+model must become a part that fits, holds, and that you can make again.*

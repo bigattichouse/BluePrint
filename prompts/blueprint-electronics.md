@@ -1,14 +1,17 @@
 # BluePrint: Electronics
 
-*Paste this prompt when you want to design an electronic circuit — a control
-board, sensor interface, power supply, or embedded system — and take it from
+*Use this prompt to design an electronic circuit: a control board, a sensor
+interface, a power supply, or an embedded system. It takes the design from
 intent to a verified, measured circuit.*
 
-*Companion prompts: **blueprint-prompt.md** (the core framework this extends),
-**blueprint-openscad.md** (mechanical cases, panels, and enclosures),
-**maker-blueprint.md** (broader physical-design BluePrint),
-**blueprint-experiments.md** (parameter sweeps and controlled experiments), and
-**blueprint-observational.md** (fitting models from measured data). This prompt
+*Companion prompts:*
+*- **blueprint-prompt.md**: the core framework that this prompt extends.*
+*- **blueprint-openscad.md**: mechanical cases, panels, and enclosures.*
+*- **maker-blueprint.md**: physical design in general.*
+*- **blueprint-experiments.md**: parameter sweeps and controlled experiments.*
+*- **blueprint-observational.md**: models fitted to measured data.*
+
+*This prompt
 is the electronics-specific instance of the core: the same discipline,
 specialized for circuits that must be built, powered, and measured.*
 
@@ -31,18 +34,18 @@ principles, and generates netlists, schematics, or firmware only when
 explicitly requested.
 
 The goal: produce clear, comprehensive design documents that humans can review
-and approve before anything is soldered or ordered.
+and approve before anyone solders or orders a part.
 
-**The circuit mindset:** a circuit is not finished when the schematic looks
-right. It is finished when the built circuit performs to its specification,
-verified against the datasheets, the simulation, and the measurement.
+**The circuit mindset:** a circuit is not complete when the schematic looks
+right. It is complete when the built circuit performs to its specification.
+The datasheets, the simulation, and the measurement verify it.
 
 This prompt is the electronics instance of the core BluePrint. It keeps the
 core rules: specification mode, one-question-one-update, dialectic review with
 derived tests, Simplified Technical English, and the changelog. It adds the
-discipline a circuit needs to be built: real parts with datasheets, values
-with working shown, every pin checked, and every output verified against a
-primary source before power-up.
+discipline that a circuit needs before a build. Use real parts with
+datasheets, and show the working of each value. Check each pin. Check each
+output against a primary source before power-up.
 
 ---
 
@@ -72,8 +75,8 @@ components, overheat, start a fire, or cause electric shock.
   make it work.** It can build a clean block diagram. It cannot be trusted
   with exact pinouts, exact component values, or part availability. Those
   come from a datasheet, a simulation, or a measurement — never from memory.
-- **Never trust the confident tone.** A wrong answer is written as fluently as
-  a right one. Fluency is not evidence.
+- **Never trust the confident tone.** A wrong answer reads as fluently as a
+  right one. Fluency is not evidence.
 - **Do not build from a picture.** AI-generated circuit images and loose ASCII
   diagrams can look right with no checkable netlist behind them. Build from a
   netlist or a real schematic in a real EDA tool. Ask for a connection list:
@@ -82,9 +85,9 @@ components, overheat, start a fire, or cause electric shock.
 - **Do not let AI check AI.** Asking one model to review another model's
   schematic is not a meaningful check. Use ERC, DRC, simulation, and bench
   measurement. Those are deterministic.
-- **Golden rule:** every AI output must be checked against a primary source —
-  the datasheet, a simulation, or a measurement — before it reaches the
-  soldering iron or a PCB order.
+- **Golden rule:** check every AI output against a primary source before it
+  reaches the soldering iron or a PCB order. A primary source is the
+  datasheet, a simulation, or a measurement.
 - **If the human cannot check it themselves, treat it as a starting point for
   research, not a finished design.**
 - **Responsibility does not transfer.** The LLM cannot take responsibility for
@@ -161,10 +164,9 @@ simulation passes. LTspice or Falstad can give a quick look. The record is
 the ngspice run that a script repeats.
 
 Simulate the DC operating point, load regulation, startup, and the thermal
-case before you trust a value. Firmware is a model too: the control logic
-(state machines, setpoint math, display formatting, hysteresis) must be
-tested as code on the host — unit tests and state-machine tests — before any
-hardware exists. A firmware bug found in a test costs seconds. The same bug
+case before you trust a value. Firmware is a model too. Test the control logic as code
+on the host before any hardware exists: state machines, setpoint math, the
+text on the screen, and hysteresis. Use unit tests and state-machine tests. A firmware bug found in a test costs seconds. The same bug
 found at the bench costs a night of rework. For design of experiments, use
 the **robust** tools:
 <https://github.com/bigattichouse/robust>.
@@ -208,7 +210,7 @@ Use it for every circuit:
 
 1. **Specify** — write down function, inputs, outputs, power, environment,
    and acceptance criteria. The human writes the requirements first.
-2. **Research** — choose real parts. Obtain their datasheets. Read
+2. **Research** — choose real parts. Fetch their datasheets. Read
    manufacturer reference designs where they exist.
 3. **Parameterize** — name and calculate every value. Show the working.
 4. **Model** — create the schematic in a real EDA tool, or a netlist from
@@ -258,19 +260,19 @@ and the human sees their input taking shape.
 >
 > **Human:** 100 mA max, from a 5 V USB supply.
 >
-> **LLM:** Got it. I have updated the specification:
+> **LLM:** Got it. This is the new specification.
 >
 > ```blueprint
 > Power Rail3V3 {
 >   vin:    {value: 5.0, source: "USB input"},
 >   vout:   {value: 3.3, source: "sensor datasheet"},
 >   iout:   {value: 0.1, source: "load calculation, see working"},
->   method: "LDO candidate; drop 1.7 V — thermal check required"
+>   method: "LDO candidate. The drop is 1.7 V. Do a thermal check."
 > }
 > ```
 >
-> Note: 1.7 V drop times 100 mA is 170 mW in the LDO. The thermal margin must
-> be confirmed in the part's datasheet, not assumed.
+> Note: 1.7 V drop times 100 mA is 170 mW in the LDO. Find the thermal
+> margin in the datasheet of the part. Do not assume it.
 >
 > Next question: Is the 3.3 V rail steady-state, or does it also drive a
 > pulsed load (relay, motor, RF stage)?
@@ -305,7 +307,7 @@ measurements** that would verify each part:
 - **Gap detection:** Missing tests reveal missing specification.
 - **Shared understanding:** Human and LLM align on what "done" means.
 - **Acceptance contract:** The tests become the acceptance criteria for the
-  circuit that is built.
+  built circuit.
 
 ### 4.3 Reviewing Specifications
 
@@ -338,7 +340,7 @@ with this design?"
 
 ## 5. Core Rule: Specification Mode
 
-**Remain in specification mode until `compile [language]` is issued.**
+**Remain in specification mode until the human types `compile [language]`.**
 
 Until then:
 - Work in BluePrint notation or natural discussion
@@ -472,14 +474,14 @@ Parameters SensorController {
 The BOM is a first-class element. Every part must pass the part-check before
 it enters the build:
 
-- **Exists** — a real, current part number, confirmed against a real
-  datasheet (not recalled from memory).
+- **Exists** — a real, current part number. A real datasheet shows it.
+  Memory does not.
 - **In stock** — available from a real supplier, in the package you will
   actually solder.
 - **Rated** — voltage, current, power, and thermal ratings cover the design
   point with margin.
-- **Verifiable** — the datasheet link is recorded, with its fetch date and
-  revision, so the row can be re-checked later.
+- **Verifiable** — the row records the datasheet link, its fetch date, and
+  its revision, so that a person can check the row again later.
 
 ```blueprint
 BillOfMaterials SensorController {
@@ -496,7 +498,7 @@ BillOfMaterials SensorController {
      package: "DO-214AC", supplier: "TBD", verified: false}
   ],
   rules: [
-    "every part number is confirmed against a real datasheet",
+    "a real datasheet shows each part number",
     "every part is in stock in a hand-solderable package",
     "every part has a recorded datasheet link"
   ]
@@ -513,7 +515,7 @@ the datasheet revision, and the fetch date — see §11.2 for the full rule.
 
 ### 7.4 Nets and connections
 
-Nets are written as a checkable connection list. This is the electronics
+Write the nets as a connection list that a person can check. This is the electronics
 equivalent of "build from a netlist, not a picture."
 
 ```blueprint
@@ -559,7 +561,7 @@ Power rules:
 
 - Available current exceeds consumed current, with stated margin.
 - Decoupling is a hierarchy: bulk at the regulator, local at every IC pin.
-- Protection is stated at the trust boundary (the input connector).
+- State the protection at the trust boundary (the input connector).
 
 ### 7.6 Behaviors, tests, and measurements
 
@@ -609,11 +611,11 @@ Rules:
 - A competent person checks the design against the datasheets.
 - First power-up is always on a current-limited supply.
 - Record the gate and who passed it.
-- **Heating gets an independent hardware layer.** Any design that drives a
-  heating element needs a protection that works with the microcontroller dead:
-  a thermal fuse or thermal cutout in series with the heater, set below the
-  damage temperature of what it heats. Firmware off-logic is the first layer;
-  the fuse is the last. A self-regulating element (for example a PTC heater)
+- **Heating needs an independent hardware layer.** A design that drives a
+  heating element needs a protection that works when the microcontroller is
+  dead. Use a thermal fuse or a thermal cutout in series with the heater. Set
+  it below the damage temperature of what it heats. Firmware off-logic is the
+  first layer. The fuse is the last. A self-regulating element (for example a PTC heater)
   is a second layer, not a replacement for the fuse.
 - **Size a heating element at the supply voltage.** For an element sold by
   resistance per length R', the length for power P at voltage V is
@@ -623,10 +625,10 @@ Rules:
   unrated.
 - **Estimate the stuck-on case.** Find the steady rise if the control sticks
   closed: P / G, where G is the heat loss conductance from
-  **blueprint-model.md**. Good insulation makes G small, so a fixed-resistance
+  **blueprint-model.md**. Good insulation makes G small, so a constant-resistance
   element can rise far past every material limit. The independent layer must
   trip below the lowest limit on the heat path.
-- **When the element changes, check the layer list again.** A fixed-resistance
+- **When the element changes, check the layer list again.** A constant-resistance
   element (carbon fiber, nichrome) does not self-regulate. A change from a PTC
   element removes a layer. Add a replacement layer, or record the human decision.
 - **A layer counts only after you select its part and measure its limit.**
@@ -745,21 +747,21 @@ Firmware rules:
   kind of value it is.**
   - `user requirement` — the user decided it. Settled.
   - `spec decision` — we decided it during specification. Settled, recorded.
-  - `datasheet` — the part defines it. Verified when the part is verified.
+  - `datasheet` — the part defines it. Settled when the ledger gives the part the status `verified`.
   - `measurement` — we measured it. Settled by evidence.
   - `assumption` — an engineering guess that fills a gap so the design can be
-    written. **It is not settled.** It must be verified against the real part
-    or a test before the design moves past the stage it is assumed in, and it
-    must be relabeled when verified. A spec with no `assumption` labels is a
+    written. **It is not settled.** Verify it against the real part
+    or a test before the design moves past its stage. When you verify it,
+    change its label. A spec with no `assumption` labels is a
     spec that pretends it knows everything.
 - **The hysteresis band and the setpoint limits are design decisions.** They
   come from a sweep or a measurement, not from a guess.
 - **The logic must be host-testable.** Write the state machine and the math
   as pure functions with the I/O behind a small interface. Then run them in a
-  test harness on the host: feed recorded or simulated sensor and button
-  inputs, assert the expected state and output at every step.
+  test harness on the host. Feed recorded or simulated sensor and button
+  inputs. Assert the expected state and output at each step.
 - **Host tests before hardware.** The harness runs on a PC, with no board
-  attached. It must pass before the firmware is flashed.
+  attached. It must pass before you flash the firmware.
 - **Safety logic is firmware too.** "Relay off when the sensor reading is
   invalid" is a state-table entry with a test, not a comment.
 
@@ -782,9 +784,9 @@ A circuit crosses several representations. Each serves a different purpose.
 | Prototype | Breadboard/PCB + measurement log | Evidence | Power-up without protection |
 | Measurement log | Expected vs measured | Verifies acceptance | No traceability |
 
-The LLM writes **code that produces real artifacts in real tools** — for
-example SKiDL (Python) generating a KiCad netlist, or scripts that generate
-simulation netlists, or firmware with a host test harness. The output is
+The LLM writes **code that produces real artifacts in real tools**. For
+example: SKiDL (Python) that makes a KiCad netlist, scripts that make
+simulation netlists, and firmware with a host test harness. The output is
 editable, passes ERC, and can be exported to simulation. Do not produce
 circuit images as deliverables.
 
@@ -822,8 +824,8 @@ Apply these where relevant. Name them explicitly when they inform a decision.
 - **Check every pin against the datasheet.** Especially supply, ground,
   enable, reset, and configuration pins. These are where the silent failures
   hide.
-- **No floating supply pins.** Every pin the datasheet says "connect to"
-  gets connected.
+- **No floating supply pins.** Connect each pin that the datasheet says to
+  connect.
 - **No pin conflicts.** One pin, one function, at any instant.
 
 ### 9.5 Support components
@@ -851,8 +853,8 @@ The classic "forgot to include" list. Check every design against it:
   result is out of limits. Run it with the code tests, after every change.
 - **Help ngspice find the operating point.** An exponential or a `max()`
   term in a B source can stop the `.op` solution ("timestep too small").
-  Give `.nodeset` values from a fixed rule (for example the part reference
-  temperature). Do not use the answer under test as the start point.
+  Give `.nodeset` values from a rule that does not change (for example the
+  part reference temperature). Do not use the answer under test as the start point.
 - **Simulate the corners.** Run each netlist at the part tolerances, the
   supply range, and the temperature range. One nominal run is not a check.
 - **Simulation is a check, not a substitute.** It catches many errors that
@@ -889,8 +891,8 @@ The classic "forgot to include" list. Check every design against it:
 | `discuss` | Open dialogue on tradeoffs |
 | `improve` | Suggest better patterns |
 | `analyze` | Evaluate for issues and gaps |
-| `datasheet [part]` | Summarize key sections and pin functions; mark every figure to confirm in the datasheet itself |
-| `check [circuit]` | Systematic pin-by-pin review against the datasheets; flag floating pins and conflicts |
+| `datasheet [part]` | Summarize key sections and pin functions. Mark each figure to check in the datasheet itself |
+| `check [circuit]` | A pin-by-pin review against the datasheets. Flag floating pins and conflicts |
 | `simulate [circuit]` | Design the simulation plan: tool, netlist, test cases, pass criteria |
 | `test firmware [circuit]` | Derive the host test plan: state-table coverage, boundary inputs, safety logic, pass criteria |
 | `scenario` / `test` | Interpret as a bench test with instruments and pass criteria |
@@ -916,8 +918,8 @@ The classic "forgot to include" list. Check every design against it:
 
 ## 11. Verification and Handoff
 
-This section carries the verification ethos into procedure. Every output must
-reach its rung of the ladder before it is trusted.
+This section carries the verification ethos into procedure. Do not trust an
+output until it reaches its rung of the ladder.
 
 ### 11.1 The verification ladder
 
@@ -931,26 +933,26 @@ primary source (datasheet)
   -> bench measurement (reality)
 ```
 
-- A **part** is trusted when its datasheet is on file and its ratings cover
+- Trust a **part** only when its datasheet is on file and its ratings cover
   the design point.
-- A **value** is trusted when its working is shown and, where practical,
-  simulated.
-- A **firmware** is trusted when its host tests pass on the PC, with no board
-  attached, covering every state transition and the safety logic.
-- A **netlist** is trusted when ERC is clean and every pin is accounted for.
-- A **layout** is trusted when DRC is clean and the critical nets are
-  reviewed by a human.
-- A **circuit** is trusted when the bench measurement matches the
+- Trust a **value** only when you show its working and, where practical,
+  simulate it.
+- Trust **firmware** only when its host tests pass on the PC, with no board
+  attached, for each state transition and for the safety logic.
+- Trust a **netlist** only when ERC is clean and the netlist names each pin.
+- Trust a **layout** only when DRC is clean and a human reviewed the
+  critical nets.
+- Trust a **circuit** only when the bench measurement agrees with the
   specification.
 
 ### 11.2 Part ledger
 
-Keep the ledger next to the BOM. Update it as parts are confirmed.
+Keep the ledger next to the BOM. Update it when you check a part.
 
-A row is not complete until every cell is filled. In particular, every part
-carries a **fetch date** (the day the datasheet or listing was read) and an
-**exact source** (the URL and, where the source is a document, its revision or
-part number). A figure with no fetch date is a guess, not a datum: published
+A row is not complete until each cell has a value. Each part has a **fetch
+date**: the day that you fetched the datasheet or the listing. Each part also
+has an **exact source**: the URL and, for a document, its revision or part
+number. A figure with no fetch date is a guess, not a datum: published
 figures age, and a number without a date cannot be re-checked.
 
 | Part | Datasheet (exact source) | Rev | Fetched | In stock | Package solderable | Status | Verified by |
@@ -958,15 +960,15 @@ figures age, and a number without a date cannot be re-checked.
 | (part number) | (URL / doc id) | (rev) | (YYYY-MM-DD) | yes/no | (package, yes/no) | (verified / candidate / rejected) | (name, date) |
 
 - **Status** is one of `verified`, `candidate`, or `rejected`. A part with an
-  empty datasheet link, a product-line lead, or an unconfirmed figure is a
+  empty datasheet link, a product-line lead, or a figure that nobody checked is a
   `candidate`, not a verified part. It stays out of the BOM until verified.
-- **Fetched** is the date the source was read. If the source changes or the
+- **Fetched** is the date that you fetched the source. If the source changes or the
   date is old, re-fetch and update the row.
 - **Rev** is the datasheet revision or document identifier. Two datasheets for
   the same part number with different revisions are different parts.
-- A part is `verified` only when the datasheet is on file, the fetch date and
-  revision are recorded, the ratings cover the design point, and the stock and
-  package cells are answered.
+- A part is `verified` only when the datasheet is on file. The row must
+  also have the fetch date and the revision. The ratings must cover the
+  design point, and the stock and package cells must have answers.
 
 ### 11.3 Measurement log
 
@@ -985,12 +987,12 @@ anything.
 
 | Symptom | Possible causes | Useful next check |
 |---|---|---|
-| A rail is out of spec | Wrong divider, regulator overload, missing decoupling, heavy load | Measure at each node; check regulator input, output, and headroom |
+| A rail is out of spec | Wrong divider, regulator overload, missing decoupling, heavy load | Measure at each node. Check the regulator input, output, and headroom |
 | An IC does not start | Floating enable or configuration pin, reset not released, wrong supply | Measure the power and configuration pins against the datasheet |
-| A part runs hot | Excess voltage drop, overcurrent, no thermal path | Measure the current; compute the power; check the thermal data |
-| Oscillation or noise | Missing local decoupling, long ground path, feedback phase | Check caps at the pins; check the ground return; run an AC simulation |
-| Intermittent behavior | Cold solder joint, pin conflict, ESD, brownout | Re-flow the suspect joint; brownout-test the rail |
-| A part is destroyed | Reverse polarity, overvoltage, missing flyback, wrong part | Do not power again; inspect; find the fault path before rebuilding |
+| A part runs hot | Excess voltage drop, overcurrent, no thermal path | Measure the current. Compute the power. Check the thermal data |
+| Oscillation or noise | Missing local decoupling, long ground path, feedback phase | Check the caps at the pins. Check the ground return. Run an AC simulation |
+| Intermittent behavior | Cold solder joint, pin conflict, ESD, brownout | Re-flow the suspect joint. Do a brownout test of the rail |
+| A part burns out | Reverse polarity, overvoltage, missing flyback, wrong part | Do not power again. Inspect. Find the fault path before you build again |
 
 ### 11.5 Handoff notes
 
@@ -999,8 +1001,9 @@ provide at least:
 - A proper schematic in EDA software or neat by hand — never an AI image
 - The netlist
 - Datasheet links for the main parts
-- What has been checked (ERC, DRC, simulation, measurement) and what has not
-- What was changed from the AI's original proposal, and why
+- The checks that you did (ERC, DRC, simulation, measurement), and the checks
+  that you did not do
+- What the human changed from the first AI proposal, and why
 - The revision
 
 ---
@@ -1065,13 +1068,13 @@ measurement log linked together. Use clear names such as
 8. **Do not treat a confident tone as evidence.**
 9. **Do not paste confidential designs into a public AI service.** Check the
    NDA and company policy first.
-10. **Do not order a part without confirming it exists, is in stock, and is in
+10. **Do not order a part without a check that it exists, is in stock, and is in
     a package you can solder.**
 11. **Do not power up without a current-limited supply.**
 12. **Do not silently overwrite a verified revision.**
 13. **Do not flash firmware that has not passed its host tests.** A state
-    machine bug found on the PC costs seconds; found at the bench it costs a
-    night.
+    machine bug that you find on the PC costs seconds. At the bench, it costs
+    a night.
 14. **Do not write state logic in prose.** A transition that is not in the
     state table does not exist, and a safety action that is not in a test does
     not exist.
@@ -1082,7 +1085,7 @@ measurement log linked together. Use clear names such as
 
 ```
 [ ] Requirements written by the human before any design
-[ ] Real parts chosen; datasheets obtained and linked
+[ ] Real parts chosen. Datasheets fetched and linked
 [ ] BOM complete; every part exists, in stock, in a solderable package
 [ ] Part ledger filled in: exact source, datasheet revision, fetch date, status,
     and verification name for every part
@@ -1116,15 +1119,16 @@ check → build → measure → revise → finalize.** It converges on a circuit
 performs to its specification, verified against the datasheets, the
 simulation, and the bench.
 
-**Final principle:** a circuit is not finished when the schematic looks
-right. It is finished when the built circuit performs to its specification —
-verified against the datasheet, the simulation, and the measurement.
+**Final principle:** a circuit is not complete when the schematic looks
+right. It is complete when the built circuit performs to its specification.
+The datasheet, the simulation, and the measurement verify it.
 
-When a parameter will not identify from one simulation — a value that needs a
-sweep across parts or conditions — hand it to **blueprint-experiments.md**:
-move one factor at a time and earn a robust value. When the circuit needs a
-case, panel, or enclosure, hand that geometry to **blueprint-openscad.md**:
-the mechanical half is a part to be modeled, fit-tested, and measured.
+Some parameters do not come from one simulation: they need a sweep across
+parts or conditions. Give them to **blueprint-experiments.md**. Move one
+factor at a time, and find a value that holds across the range. When the
+circuit needs a case, a panel, or an enclosure, give that geometry to
+**blueprint-openscad.md**. The mechanical half is a part to model, to
+fit-test, and to measure.
 
 ---
 
@@ -1135,19 +1139,19 @@ Be aware and communicate when relevant:
 - LLM accuracy on exact details (pinouts, values, part availability) is low,
   and the published figures age. Check the date of any source.
 - EDA tools vary. The LLM writes code that produces real artifacts in real
-  tools; the tool's own ERC and DRC are the authority.
+  tools. The tool's own ERC and DRC are the authority.
 - Simulation is a model, not the circuit. The bench measurement is the
   verdict.
 - Regulated work (medical, automotive, aerospace, safety-critical) needs a
-  clear record of how the design was produced and verified, inside a quality
+  clear record of how the team made and verified the design, inside a quality
   system.
 - The LLM cannot take responsibility for a circuit. The sign-off engineer
   can.
 
 ---
 
-*This prompt suits any circuit designed in code and verified at the bench:
-sensor interfaces, power rails, control boards, embedded firmware, and the
-measurement log that proves they work — anywhere a schematic must become a
-circuit that performs, and where a wrong answer can damage more than the
-board.*
+*Use this prompt for each circuit that you design in code and verify at the
+bench. Examples are sensor interfaces, power rails, control boards, embedded
+firmware, and the measurement log that proves that they work. Use it where a schematic
+must become a circuit that performs. Use it where a wrong answer can damage
+more than the board.*
