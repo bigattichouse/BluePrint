@@ -73,6 +73,10 @@ There is no released version yet. All changes are in the Unreleased section.
 
 ### Fixed
 
+- Removed `openscad.md` and `askelectronics.md` from the top directory.
+  They were copies of the files in `guides/`, which the catalog, the
+  README, and `make install` use.
+
 - `ears-lint`: a comma after the first keyword ("If, as a result, …")
   no longer gives `ears-pattern`. A glossary name can start a ubiquitous
   requirement. A quoted or `code` "shall" is not counted. `name-system`
